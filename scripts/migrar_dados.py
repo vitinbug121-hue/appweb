@@ -1,24 +1,8 @@
 """
-Migra os dados do sistema DESKTOP (Tkinter) para o banco SQLite do sistema web.
-
-O que ele lê, por conta (cada subpasta dentro de `contas/`):
-  - config_conta.json              -> tabelas `contas` + `config_conta`
-  - ml_tokens_autorizacao.json     -> tabela `tokens_ml`
-  - database_vendas.json           -> tabela `vendas`
-  - registros_pedidos.xlsx         -> tabela `boletos_disponiveis`
-
-E na raiz do projeto antigo (fora de `contas/`):
-  - .env (TOKEN_REEMBOLSO_MP1, TOKEN_REEMBOLSO_MP2, ...) -> `tokens_reembolso_mp`
+Migra os dados do sistema DESKTOP (Tkinter) para o banco PostgreSQL (Railway) do sistema web.
 
 USO:
     python scripts/migrar_dados.py /caminho/para/o/projeto/antigo
-
-O "caminho para o projeto antigo" é a pasta onde fica o `main.py` original
-(a que contém a subpasta `contas/` e o `.env`).
-
-Pode rodar quantas vezes quiser — contas e vendas já existentes são
-atualizadas (não duplicadas), graças ao UNIQUE(conta_id, order_id) e
-ON CONFLICT no schema.
 """
 import json
 import os
@@ -26,6 +10,8 @@ import sys
 from datetime import datetime
 
 import pandas as pd
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 # Permite rodar `python scripts/migrar_dados.py` a partir de qualquer lugar
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,10 +19,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.db import get_connection, init_db  # noqa: E402
 
 
-# ---------------------------------------------------------------------------
-# Mapeamento dos campos do database_vendas.json -> colunas da tabela `vendas`
-# (mesmos nomes usados no main.py original, ver classe AppColetorPro)
-# ---------------------------------------------------------------------------
 CAMPOS_VENDA = [
     "buyer_id", "produto", "valor", "cor_produto",
     "solicitado", "data_solicitacao", "data_solicitacao_inicial",
@@ -50,15 +32,10 @@ CAMPOS_VENDA = [
     "encerrada", "cobranca_nao_pago_enviada",
 ]
 
-# No JSON antigo o campo se chama "corProduto" (camelCase); no banco novo é
-# "cor_produto" (snake_case, padrão do resto do schema). Mapeamos aqui.
 ALIAS_CAMPOS_JSON = {
     "cor_produto": "corProduto",
 }
 
-# Campos que são booleanos no schema — se não existirem no JSON antigo,
-# devem virar 0 (False) e não NULL, senão consultas tipo "campo = 0" quebram
-# (NULL nunca é igual a 0 em SQL).
 CAMPOS_BOOLEANOS = {
     "solicitado", "numero_extraido", "contatado_wa",
     "rastreio_enviado", "boleto_enviado", "boleto_pago",
@@ -73,7 +50,7 @@ def _bool_para_int(valor):
     return 1 if bool(valor) else 0
 
 
-def migrar_conta(conn, pasta_conta, email):
+def migrar_conta(cursor, pasta_conta, email):
     """Migra uma conta (uma subpasta de `contas/`). Retorna o conta_id."""
     config_path = os.path.join(pasta_conta, "config_conta.json")
     config = {}
@@ -84,30 +61,32 @@ def migrar_conta(conn, pasta_conta, email):
     nome_exibicao = config.get("NOME_EXIBICAO") or config.get("nome") or email
     ativo = config.get("ATIVO", True)
 
-    existente = conn.execute("SELECT id FROM contas WHERE email = ?", (email,)).fetchone()
+    cursor.execute("SELECT id FROM contas WHERE email = %s", (email,))
+    existente = cursor.fetchone()
+    
     if existente:
         conta_id = existente["id"]
-        conn.execute(
-            "UPDATE contas SET nome_exibicao = ?, ativo = ? WHERE id = ?",
+        cursor.execute(
+            "UPDATE contas SET nome_exibicao = %s, ativo = %s WHERE id = %s",
             (nome_exibicao, _bool_para_int(ativo), conta_id),
         )
     else:
-        cur = conn.execute(
-            "INSERT INTO contas (email, nome_exibicao, ativo, data_criacao) VALUES (?, ?, ?, ?)",
+        cursor.execute(
+            "INSERT INTO contas (email, nome_exibicao, ativo, data_criacao) VALUES (%s, %s, %s, %s) RETURNING id",
             (email, nome_exibicao, _bool_para_int(ativo), datetime.now().strftime("%d/%m/%Y %H:%M")),
         )
-        conta_id = cur.lastrowid
+        conta_id = cursor.fetchone()["id"]
 
     # ---- config_conta (credenciais ML) ----
     if config:
-        conn.execute(
+        cursor.execute(
             """INSERT INTO config_conta (conta_id, ml_client_id, ml_client_secret, ml_redirect_uri, ml_seller_id)
-               VALUES (?, ?, ?, ?, ?)
+               VALUES (%s, %s, %s, %s, %s)
                ON CONFLICT(conta_id) DO UPDATE SET
-                 ml_client_id = excluded.ml_client_id,
-                 ml_client_secret = excluded.ml_client_secret,
-                 ml_redirect_uri = excluded.ml_redirect_uri,
-                 ml_seller_id = excluded.ml_seller_id""",
+                 ml_client_id = EXCLUDED.ml_client_id,
+                 ml_client_secret = EXCLUDED.ml_client_secret,
+                 ml_redirect_uri = EXCLUDED.ml_redirect_uri,
+                 ml_seller_id = EXCLUDED.ml_seller_id""",
             (
                 conta_id,
                 config.get("ML_CLIENT_ID", ""),
@@ -117,13 +96,12 @@ def migrar_conta(conn, pasta_conta, email):
             ),
         )
 
-        # tokens_mp: TOKEN_MP, TOKEN_MP2, TOKEN_MP3... presentes no config_conta.json
-        conn.execute("DELETE FROM tokens_mp WHERE conta_id = ?", (conta_id,))
+        cursor.execute("DELETE FROM tokens_mp WHERE conta_id = %s", (conta_id,))
         ordem = 0
         for chave, valor in config.items():
             if chave.startswith("TOKEN_MP") and valor:
-                conn.execute(
-                    "INSERT INTO tokens_mp (conta_id, token, ordem) VALUES (?, ?, ?)",
+                cursor.execute(
+                    "INSERT INTO tokens_mp (conta_id, token, ordem) VALUES (%s, %s, %s)",
                     (conta_id, valor, ordem),
                 )
                 ordem += 1
@@ -133,25 +111,25 @@ def migrar_conta(conn, pasta_conta, email):
     if os.path.exists(tokens_ml_path):
         with open(tokens_ml_path, "r", encoding="utf-8") as f:
             tokens = json.load(f)
-        conn.execute(
+        cursor.execute(
             """INSERT INTO tokens_ml (conta_id, access_token, refresh_token, expires_at)
-               VALUES (?, ?, ?, ?)
+               VALUES (%s, %s, %s, %s)
                ON CONFLICT(conta_id) DO UPDATE SET
-                 access_token = excluded.access_token,
-                 refresh_token = excluded.refresh_token,
-                 expires_at = excluded.expires_at""",
+                 access_token = EXCLUDED.access_token,
+                 refresh_token = EXCLUDED.refresh_token,
+                 expires_at = EXCLUDED.expires_at""",
             (
                 conta_id,
                 tokens.get("access_token", ""),
                 tokens.get("refresh_token", ""),
-                tokens.get("expires_in", ""),  # o JSON original guarda segundos, não uma data — ver observação no README
+                str(tokens.get("expires_in", "")),
             ),
         )
 
     return conta_id
 
 
-def migrar_vendas(conn, pasta_conta, conta_id, email):
+def migrar_vendas(cursor, pasta_conta, conta_id, email):
     db_path = os.path.join(pasta_conta, "database_vendas.json")
     if not os.path.exists(db_path):
         return 0
@@ -165,17 +143,15 @@ def migrar_vendas(conn, pasta_conta, conta_id, email):
         for campo in CAMPOS_VENDA:
             chave_json = ALIAS_CAMPOS_JSON.get(campo, campo)
             valor = dados.get(chave_json)
-            # normaliza campos booleanos (o JSON antigo usa True/False do Python,
-            # e às vezes o campo simplesmente não existe -> tratamos como False)
             if campo in CAMPOS_BOOLEANOS:
                 valor = _bool_para_int(valor)
             valores[campo] = valor
 
         colunas = ", ".join(["conta_id", "order_id"] + CAMPOS_VENDA)
-        placeholders = ", ".join(["?"] * (2 + len(CAMPOS_VENDA)))
-        atualizacoes = ", ".join([f"{c} = excluded.{c}" for c in CAMPOS_VENDA])
+        placeholders = ", ".join(["%s"] * (2 + len(CAMPOS_VENDA)))
+        atualizacoes = ", ".join([f"{c} = EXCLUDED.{c}" for c in CAMPOS_VENDA])
 
-        conn.execute(
+        cursor.execute(
             f"""INSERT INTO vendas ({colunas}) VALUES ({placeholders})
                 ON CONFLICT(conta_id, order_id) DO UPDATE SET {atualizacoes}""",
             [conta_id, order_id] + [valores[c] for c in CAMPOS_VENDA],
@@ -186,7 +162,7 @@ def migrar_vendas(conn, pasta_conta, conta_id, email):
     return total
 
 
-def migrar_boletos_excel(conn, pasta_conta, conta_id, email):
+def migrar_boletos_excel(cursor, pasta_conta, conta_id, email):
     caminho_excel = os.path.join(pasta_conta, "registros_pedidos.xlsx")
     if not os.path.exists(caminho_excel):
         return 0
@@ -197,15 +173,13 @@ def migrar_boletos_excel(conn, pasta_conta, conta_id, email):
         print(f"  ! Erro ao ler {caminho_excel}: {e}")
         return 0
 
-    # Evita duplicar se rodar o script mais de uma vez: limpa os boletos
-    # dessa conta antes de reimportar (a planilha é a fonte da verdade).
-    conn.execute("DELETE FROM boletos_disponiveis WHERE conta_id = ?", (conta_id,))
+    cursor.execute("DELETE FROM boletos_disponiveis WHERE conta_id = %s", (conta_id,))
 
     total = 0
     for _, row in df.iterrows():
         usado = str(row.get("Boleto Usado", "False")).strip().upper() == "TRUE"
-        conn.execute(
-            "INSERT INTO boletos_disponiveis (conta_id, codigo, id_payment, horario, usado) VALUES (?, ?, ?, ?, ?)",
+        cursor.execute(
+            "INSERT INTO boletos_disponiveis (conta_id, codigo, id_payment, horario, usado) VALUES (%s, %s, %s, %s, %s)",
             (
                 conta_id,
                 str(row.get("Código", "")),
@@ -220,9 +194,7 @@ def migrar_boletos_excel(conn, pasta_conta, conta_id, email):
     return total
 
 
-def migrar_tokens_reembolso_raiz(conn, caminho_projeto_antigo):
-    """Lê o .env da raiz do projeto antigo (fora de contas/) e importa
-    os TOKEN_REEMBOLSO_MP1, TOKEN_REEMBOLSO_MP2, ... compartilhados."""
+def migrar_tokens_reembolso_raiz(cursor, caminho_projeto_antigo):
     env_path = os.path.join(caminho_projeto_antigo, ".env")
     if not os.path.exists(env_path):
         return 0
@@ -242,10 +214,10 @@ def migrar_tokens_reembolso_raiz(conn, caminho_projeto_antigo):
     if not tokens:
         return 0
 
-    conn.execute("DELETE FROM tokens_reembolso_mp")
+    cursor.execute("DELETE FROM tokens_reembolso_mp")
     for ordem, token in enumerate(tokens):
-        conn.execute(
-            "INSERT INTO tokens_reembolso_mp (token, ordem, ativo) VALUES (?, ?, 1)",
+        cursor.execute(
+            "INSERT INTO tokens_reembolso_mp (token, ordem, ativo) VALUES (%s, %s, 1)",
             (token, ordem),
         )
 
@@ -267,6 +239,7 @@ def main():
 
     init_db()
     conn = get_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     print(f"Lendo contas em: {accounts_dir}\n")
 
@@ -279,18 +252,19 @@ def main():
         if not os.path.isdir(pasta_conta):
             continue
 
-        email = nome_pasta  # o nome da pasta É o e-mail, igual no sistema antigo
+        email = nome_pasta
         print(f"[{email}]")
 
-        conta_id = migrar_conta(conn, pasta_conta, email)
-        total_vendas += migrar_vendas(conn, pasta_conta, conta_id, email)
-        total_boletos += migrar_boletos_excel(conn, pasta_conta, conta_id, email)
+        conta_id = migrar_conta(cursor, pasta_conta, email)
+        total_vendas += migrar_vendas(cursor, pasta_conta, conta_id, email)
+        total_boletos += migrar_boletos_excel(cursor, pasta_conta, conta_id, email)
         total_contas += 1
         print()
 
-    migrar_tokens_reembolso_raiz(conn, caminho_projeto_antigo)
+    migrar_tokens_reembolso_raiz(cursor, caminho_projeto_antigo)
 
     conn.commit()
+    cursor.close()
     conn.close()
 
     print("=" * 60)
