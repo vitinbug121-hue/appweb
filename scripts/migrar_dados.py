@@ -143,8 +143,21 @@ def migrar_vendas(cursor, pasta_conta, conta_id, email):
         for campo in CAMPOS_VENDA:
             chave_json = ALIAS_CAMPOS_JSON.get(campo, campo)
             valor = dados.get(chave_json)
-            if campo in CAMPOS_BOOLEANOS:
+            
+            # Tratamento para campos numéricos/valores
+            if campo == "valor":
+                if valor is None or str(valor).strip() == "":
+                    valor = None
+                else:
+                    try:
+                        valor = float(str(valor).replace(",", "."))
+                    except ValueError:
+                        valor = None
+            elif campo in CAMPOS_BOOLEANOS:
                 valor = _bool_para_int(valor)
+            elif valor == "":
+                valor = None
+
             valores[campo] = valor
 
         colunas = ", ".join(["conta_id", "order_id"] + CAMPOS_VENDA)
@@ -237,9 +250,100 @@ def main():
         print(f"ERRO: não encontrei a pasta 'contas' em: {accounts_dir}")
         sys.exit(1)
 
-    init_db()
-    conn = get_connection()
+    # Conexão direta passando os parâmetros explícitos
+    conn = psycopg2.connect(
+        dbname="railway",
+        user="postgres",
+        password="dRKxNHGNdoXLlsaTRPKgRQwBaDkGcpEu",
+        host="metro.proxy.rlwy.net",
+        port=44195
+    )
     cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Criar as tabelas caso ainda não existam no PostgreSQL
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS contas (
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            nome_exibicao VARCHAR(255),
+            ativo INT DEFAULT 1,
+            data_criacao VARCHAR(50)
+        );
+        CREATE TABLE IF NOT EXISTS config_conta (
+            id SERIAL PRIMARY KEY,
+            conta_id INT UNIQUE REFERENCES contas(id) ON DELETE CASCADE,
+            ml_client_id VARCHAR(255),
+            ml_client_secret VARCHAR(255),
+            ml_redirect_uri VARCHAR(255),
+            ml_seller_id VARCHAR(255)
+        );
+        CREATE TABLE IF NOT EXISTS tokens_mp (
+            id SERIAL PRIMARY KEY,
+            conta_id INT REFERENCES contas(id) ON DELETE CASCADE,
+            token TEXT,
+            ordem INT DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS tokens_ml (
+            id SERIAL PRIMARY KEY,
+            conta_id INT UNIQUE REFERENCES contas(id) ON DELETE CASCADE,
+            access_token TEXT,
+            refresh_token TEXT,
+            expires_at VARCHAR(100)
+        );
+        CREATE TABLE IF NOT EXISTS vendas (
+            id SERIAL PRIMARY KEY,
+            conta_id INT REFERENCES contas(id) ON DELETE CASCADE,
+            order_id VARCHAR(100) NOT NULL,
+            buyer_id VARCHAR(100),
+            produto TEXT,
+            valor NUMERIC(10, 2),
+            cor_produto VARCHAR(100),
+            solicitado INT DEFAULT 0,
+            data_solicitacao VARCHAR(50),
+            data_solicitacao_inicial VARCHAR(50),
+            numero_extraido INT DEFAULT 0,
+            zap_extraido VARCHAR(50),
+            contatado_wa INT DEFAULT 0,
+            rastreio_enviado INT DEFAULT 0,
+            data_rastreio VARCHAR(50),
+            codigo_rastreio VARCHAR(100),
+            boleto_enviado INT DEFAULT 0,
+            data_boleto VARCHAR(50),
+            codigo_boleto TEXT,
+            id_payment VARCHAR(100),
+            horario_boleto VARCHAR(50),
+            boleto_pago INT DEFAULT 0,
+            data_boleto_pago VARCHAR(50),
+            boleto_pago_agradecimento INT DEFAULT 0,
+            boleto_vencido INT DEFAULT 0,
+            boleto_autorizado_msg INT DEFAULT 0,
+            cliente_autorizou INT DEFAULT 0,
+            cliente_autorizou_via_ia INT DEFAULT 0,
+            cobrado_dobro INT DEFAULT 0,
+            boleto_pago_dobro INT DEFAULT 0,
+            id_payment_dobro VARCHAR(100),
+            rembolsado INT DEFAULT 0,
+            data_rembolso VARCHAR(50),
+            encerrada INT DEFAULT 0,
+            cobranca_nao_pago_enviada INT DEFAULT 0,
+            UNIQUE(conta_id, order_id)
+        );
+        CREATE TABLE IF NOT EXISTS boletos_disponiveis (
+            id SERIAL PRIMARY KEY,
+            conta_id INT REFERENCES contas(id) ON DELETE CASCADE,
+            codigo TEXT,
+            id_payment VARCHAR(100),
+            horario VARCHAR(50),
+            usado INT DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS tokens_reembolso_mp (
+            id SERIAL PRIMARY KEY,
+            token TEXT,
+            ordem INT DEFAULT 0,
+            ativo INT DEFAULT 1
+        );
+    """)
+    conn.commit()
 
     print(f"Lendo contas em: {accounts_dir}\n")
 
