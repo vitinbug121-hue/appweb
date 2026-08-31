@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Nova conta{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Gestão</div>
+  <h1>Nova conta</h1>
+</div>
+
+<div class="card p-4" style="max-width: 480px;">
+  <form method="post" action="{{ url_for('contas.nova') }}">
+    <div class="form-floating mb-3">
+      <input type="email" class="form-control" id="email" name="email" placeholder="email@exemplo.com" required>
+      <label for="email">E-mail da conta</label>
+    </div>
+    <div class="form-floating mb-4">
+      <input type="text" class="form-control" id="nome_exibicao" name="nome_exibicao" placeholder="Nome de exibição">
+      <label for="nome_exibicao">Nome de exibição (opcional)</label>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-acp-orange">
+        <i class="bi bi-check-circle me-1"></i> Cadastrar
+      </button>
+      <a href="{{ url_for('contas.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

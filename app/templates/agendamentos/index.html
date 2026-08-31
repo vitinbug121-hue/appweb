@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Agendamentos{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+  <div>
+    <div class="eyebrow">Automação</div>
+    <h1>Agendamentos</h1>
+  </div>
+  <a href="{{ url_for('agendamentos.novo') }}" class="btn btn-acp-orange">
+    <i class="bi bi-plus-circle me-1"></i> Novo agendamento
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Nome</th><th>Conta</th><th>Ação</th><th>Tipo</th>
+          <th>Horários</th><th>Status</th><th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ag in agendamentos %}
+        <tr>
+          <td>{{ ag.nome }}</td>
+          <td class="small">{{ ag.conta_email }}</td>
+          <td>{{ acoes_label.get(ag.acao, ag.acao) }}</td>
+          <td>{{ 'Diária' if ag.tipo == 'diaria' else 'Única (' + (ag.data or '—') + ')' }}</td>
+          <td class="font-mono small">{{ ag.horarios }}</td>
+          <td>
+            {% if ag.ativo %}
+              <span class="badge badge-soft-success">Ativo</span>
+            {% else %}
+              <span class="badge badge-soft-neutral">Inativo</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="d-flex gap-2 justify-content-end">
+              <form action="{{ url_for('agendamentos.executar_agora', agendamento_id=ag.id) }}" method="post">
+                <button class="btn btn-sm btn-outline-secondary" title="Executar agora">
+                  <i class="bi bi-play-fill"></i>
+                </button>
+              </form>
+              <form action="{{ url_for('agendamentos.toggle', agendamento_id=ag.id) }}" method="post">
+                <button class="btn btn-sm btn-outline-secondary" title="Ativar/Desativar">
+                  <i class="bi bi-toggle2-on"></i>
+                </button>
+              </form>
+              <form action="{{ url_for('agendamentos.deletar', agendamento_id=ag.id) }}" method="post"
+                    onsubmit="return confirm('Excluir este agendamento?');">
+                <button class="btn btn-sm btn-outline-danger" title="Excluir">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Nenhum agendamento cadastrado ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h6 class="text-uppercase text-muted fw-bold small mb-3" style="letter-spacing:.06em">Histórico de execução</h6>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr><th>Tarefa</th><th>Ação</th><th>Status</th><th>Data/Hora</th><th>Mensagem</th></tr>
+      </thead>
+      <tbody>
+        {% for h in historico %}
+        <tr>
+          <td>{{ h.tarefa_nome }}</td>
+          <td>{{ acoes_label.get(h.acao, h.acao) }}</td>
+          <td>
+            {% if h.status == 'SUCESSO' %}
+              <span class="badge badge-soft-success">Sucesso</span>
+            {% else %}
+              <span class="badge badge-soft-danger">Erro</span>
+            {% endif %}
+          </td>
+          <td class="font-mono small">{{ h.data_hora }}</td>
+          <td class="small text-muted">{{ h.mensagem }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Nenhuma execução registrada ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="text-muted small mt-3">
+  <i class="bi bi-info-circle me-1"></i>
+  O agendador roda em uma thread em background dentro do próprio processo Flask, verificando a cada
+  {{ '20 segundos' }} se algum horário bate. Por enquanto só a ação "Atualizar Pagos" pode ser
+  agendada — é a única que não depende de um input manual (como um código de rastreio digitado na hora).
+</p>
+
+{% endblock %}

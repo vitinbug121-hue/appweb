@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Documentação{% endblock %}
+
+{% block extra_head %}
+<style>
+  .doc-secao { margin-bottom: 2rem; }
+  .doc-secao h2 {
+    font-size: 1.05rem; font-weight: 800; color: var(--acp-navy);
+    display: flex; align-items: center; gap: .5rem;
+    border-bottom: 2px solid var(--acp-border); padding-bottom: .5rem; margin-bottom: 1rem;
+  }
+  .doc-item { padding: .85rem 0; border-bottom: 1px dashed var(--acp-border); }
+  .doc-item:last-child { border-bottom: none; }
+  .doc-item .titulo { font-weight: 700; color: var(--acp-text); }
+  .doc-item .desc { color: var(--acp-text-muted); font-size: .9rem; margin-top: .15rem; }
+  .status-pill {
+    font-size: .68rem; font-weight: 700; padding: .2rem .55rem; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .03em; white-space: nowrap;
+  }
+  .status-ok { background: rgba(40,167,69,.14); color: #1e7e34; }
+  .status-pendente { background: rgba(107,118,134,.14); color: #4a5568; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Referência</div>
+  <h1>Documentação do Sistema</h1>
+  <p class="text-muted small mt-2 mb-0">
+    Conteúdo portado da documentação do sistema desktop original. O selo em cada item mostra se a
+    funcionalidade já está disponível na versão web ou se ainda não foi portada.
+  </p>
+</div>
+
+<div class="doc-secao">
+  <h2><i class="bi bi-key"></i> Autenticação e Conexão</h2>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Autorizar ML</div>
+      <div class="desc">Realiza a conexão com a conta do Mercado Livre (fluxo OAuth completo), gerando o token de acesso e buscando o Seller ID automaticamente.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /ml/autorizar</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Logar WhatsApp</div>
+      <div class="desc">Realiza a autenticação e conexão com o WhatsApp (via QR Code).</div>
+    </div>
+    <span class="status-pill status-pendente">Não portado</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Inserir Token MP / Token de Reembolso</div>
+      <div class="desc">Conecta a conta do Mercado Pago ao e-mail correspondente para identificar e conciliar boletos pagos, e cadastra os tokens usados para reembolso.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /configuracoes</span>
+  </div>
+</div>
+
+<div class="doc-secao">
+  <h2><i class="bi bi-chat-dots"></i> Automação de Mensagens (WhatsApp e ML)</h2>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Primeira Msg e Wpp / Chamar Wpp</div>
+      <div class="desc">Envia a primeira mensagem com o prazo de entrega para novas vendas e captura o número de WhatsApp do cliente.</div>
+    </div>
+    <span class="status-pill status-pendente">Não portado</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Enviar Rastreio</div>
+      <div class="desc">Dispara uma mensagem com o código de rastreio (Correios ou AliExpress) para o comprador.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /vendas</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Agradecimento</div>
+      <div class="desc">Envia uma mensagem de agradecimento aos clientes que já pagaram o boleto, com a previsão de entrega.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /vendas</span>
+  </div>
+</div>
+
+<div class="doc-secao">
+  <h2><i class="bi bi-receipt"></i> Gestão de Boletos e Taxas</h2>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Enviar Boleto</div>
+      <div class="desc">Envia o boleto (aviso + código + pedido de comprovante) para quem ainda não recebeu a primeira cobrança. No sistema original só era enviado depois do rastreio — mesma regra aqui.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /vendas</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Taxar e Autorizar BLT / Erro no Boleto / Cobrar Dobrado / Reenviar Boleto</div>
+      <div class="desc">Variações do fluxo de cobrança: notificar taxa e pedir autorização, corrigir código de barras com erro, cobrar uma segunda taxa, ou reenviar o boleto já emitido.</div>
+    </div>
+    <span class="status-pill status-pendente">Não portado</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Atualizar Pagos</div>
+      <div class="desc">Consulta o Mercado Pago (testando os tokens cadastrados em carrossel) e marca automaticamente os boletos que já foram pagos ou identifica os vencidos.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> Dashboard / /acoes/atualizar-pagos</span>
+  </div>
+</div>
+
+<div class="doc-secao">
+  <h2><i class="bi bi-robot"></i> Inteligência Artificial (IA)</h2>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Responder Dúvidas ML</div>
+      <div class="desc">Usa IA (Groq) para responder automaticamente às perguntas feitas pelos usuários nos anúncios do Mercado Livre, com filtro de palavras sensíveis.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /ia</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Rodar IA Reclamação / Rodar IA Comum</div>
+      <div class="desc">Executa a IA para analisar e responder reclamações abertas ou dúvidas gerais no chat comum — depende de diferenciar os dois tipos de conversa na API do ML.</div>
+    </div>
+    <span class="status-pill status-pendente">Não portado</span>
+  </div>
+</div>
+
+<div class="doc-secao">
+  <h2><i class="bi bi-bar-chart"></i> Dashboards, Relatórios e Dados</h2>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Dashboard</div>
+      <div class="desc">Painel geral de controle e monitoramento da conta ativa, com KPIs e log em tempo real.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Todos Pagos / Dash Lote</div>
+      <div class="desc">Gráficos analíticos de resultados financeiros e desempenho segmentado por lote de envio.</div>
+    </div>
+    <span class="status-pill status-pendente">Não portado</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Exportar Excel</div>
+      <div class="desc">Gera uma planilha com os dados de todas as vendas da conta, com link clicável e destaque para vendas encerradas.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /vendas</span>
+  </div>
+</div>
+
+<div class="doc-secao">
+  <h2><i class="bi bi-exclamation-triangle"></i> Pendências</h2>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Não Pagos / Não Autorizados</div>
+      <div class="desc">Cobra automaticamente os clientes que receberam o boleto/solicitação de autorização há mais de 24h e ainda não responderam.</div>
+    </div>
+    <span class="status-pill status-pendente">Não portado</span>
+  </div>
+</div>
+
+<div class="doc-secao">
+  <h2><i class="bi bi-gear-wide-connected"></i> Controle do Sistema e Rotinas</h2>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Agendamentos</div>
+      <div class="desc">Cria e gerencia tarefas agendadas para rodar rotinas automaticamente, com histórico de execução.</div>
+    </div>
+    <span class="status-pill status-ok"><i class="bi bi-check-circle"></i> /agendamentos</span>
+  </div>
+
+  <div class="doc-item d-flex justify-content-between gap-3">
+    <div>
+      <div class="titulo">Stop Urgente</div>
+      <div class="desc">No sistema desktop original, interrompia um processamento longo e bloqueante em andamento. No modelo web, cada ação já é uma requisição isolada e rápida — esse botão hoje é mais simbólico do que funcional; vale reavaliar o que ele deveria fazer nesse novo modelo (ex: pausar o agendador).</div>
+    </div>
+    <span class="status-pill status-pendente">Decorativo</span>
+  </div>
+</div>
+
+{% endblock %}

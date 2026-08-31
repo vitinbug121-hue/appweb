@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Vendas{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+  <div>
+    <div class="eyebrow">Operação</div>
+    <h1>Vendas · {{ conta_ativa }}</h1>
+  </div>
+  <a href="{{ url_for('vendas.exportar') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Ordem</th>
+          <th>Produto</th>
+          <th>Valor</th>
+          <th>Rastreio</th>
+          <th>Boleto</th>
+          <th class="text-end" style="min-width: 260px;">Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for venda in vendas %}
+        <tr>
+          <td class="font-mono small">{{ venda.order_id }}</td>
+          <td>{{ venda.produto or '—' }}</td>
+          <td>{{ venda.valor or '—' }}</td>
+          <td>
+            {% if venda.rastreio_enviado %}
+              <span class="badge badge-soft-success"><i class="bi bi-check-circle me-1"></i>{{ venda.codigo_rastreio }}</span>
+            {% else %}
+              <span class="badge badge-soft-neutral">Não enviado</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if venda.boleto_pago %}
+              <span class="badge badge-soft-success">Pago</span>
+            {% elif venda.boleto_enviado %}
+              <span class="badge badge-soft-warning">Enviado</span>
+            {% else %}
+              <span class="badge badge-soft-neutral">—</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if not venda.rastreio_enviado %}
+            <form action="{{ url_for('vendas.rota_enviar_rastreio', venda_id=venda.id) }}"
+                  method="post" class="d-flex gap-2 justify-content-end">
+              <input type="text" name="codigo_rastreio" class="form-control form-control-sm"
+                     placeholder="Código de rastreio" style="max-width: 160px;" required>
+              <button type="submit" class="btn btn-sm btn-acp-orange text-nowrap">
+                <i class="bi bi-truck me-1"></i>Enviar
+              </button>
+            </form>
+            {% elif not venda.boleto_enviado %}
+            <form action="{{ url_for('vendas.rota_enviar_boleto', venda_id=venda.id) }}" method="post" class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-sm btn-acp-orange text-nowrap">
+                <i class="bi bi-receipt me-1"></i>Enviar Boleto
+              </button>
+            </form>
+            {% elif venda.boleto_pago and not venda.boleto_pago_agradecimento %}
+            <form action="{{ url_for('vendas.rota_enviar_agradecimento', venda_id=venda.id) }}"
+                  method="post" class="d-flex gap-2 justify-content-end">
+              <input type="text" name="data_entrega" class="form-control form-control-sm"
+                     placeholder="Ex: amanhã" style="max-width: 140px;" required>
+              <button type="submit" class="btn btn-sm btn-acp-orange text-nowrap">
+                <i class="bi bi-chat-heart me-1"></i>Agradecer
+              </button>
+            </form>
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma venda para essa conta.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="text-muted small mt-3">
+  <i class="bi bi-info-circle me-1"></i>
+  Esse botão chama a API real do Mercado Livre (<code>app/services/mercadolivre.py</code>).
+  Sem credenciais ML válidas cadastradas para a conta, ele vai falhar de forma controlada
+  e registrar o erro no log — é o comportamento esperado nesse protótipo.
+</p>
+
+{% endblock %}

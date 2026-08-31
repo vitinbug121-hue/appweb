@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Painel de controle</div>
+  <h1>Visão geral · {{ conta_ativa }}</h1>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  {% for kpi in kpis %}
+  <div class="col-6 col-lg-3">
+    <div class="card p-3">
+      <div class="text-muted small mb-1">{{ kpi.label }}</div>
+      <div class="fs-3 fw-bold" style="color:var(--acp-navy)">{{ kpi.valor }}</div>
+      <span class="badge badge-soft-{{ kpi.badge }} mt-1">{{ kpi.texto_badge }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-4">
+
+  <!-- Ações rápidas -->
+  <div class="col-lg-7">
+    <h6 class="text-uppercase text-muted fw-bold small mb-3" style="letter-spacing:.06em">Ações rápidas</h6>
+    <div class="row g-3">
+      {% for acao in acoes %}
+      <div class="col-6 col-md-4">
+        {% if acao.url %}
+        <a href="{{ acao.url }}" class="card card-acp-action p-3 h-100 text-start text-decoration-none d-block">
+          <div class="icon-wrap mb-2"><i class="bi {{ acao.icone }}"></i></div>
+          <div class="fw-semibold text-body">{{ acao.titulo }}</div>
+          <div class="text-muted small">{{ acao.subtitulo }}</div>
+        </a>
+        {% else %}
+        <form action="{{ acao.action_url or url_for('acoes.executar', nome_acao=acao.acao) }}" method="post" class="h-100 m-0">
+          <button type="submit" class="card card-acp-action p-3 h-100 w-100 text-start border-0">
+            <div class="icon-wrap mb-2"><i class="bi {{ acao.icone }}"></i></div>
+            <div class="fw-semibold">{{ acao.titulo }}</div>
+            <div class="text-muted small">{{ acao.subtitulo }}</div>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="col-lg-5">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <h6 class="text-uppercase text-muted fw-bold small mb-0" style="letter-spacing:.06em">Log em tempo real</h6>
+      <span id="logLiveBadge" class="badge badge-soft-neutral">conectando...</span>
+    </div>
+    <div class="log-console" id="logConsole">
+      {% for linha in logs %}
+      <div>
+        <span class="log-time">[{{ linha.hora }}]</span>
+        <span class="log-{{ linha.nivel }}">[{{ linha.nivel|upper }}]</span>
+        {{ linha.msg }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  const console_ = document.getElementById('logConsole');
+  const badge = document.getElementById('logLiveBadge');
+
+  function marcarConectado(ok) {
+    badge.textContent = ok ? 'ao vivo' : 'reconectando...';
+    badge.className = 'badge ' + (ok ? 'badge-soft-success' : 'badge-soft-warning');
+  }
+
+  function adicionarLinha(evento) {
+    const dados = JSON.parse(evento.data);
+    const linha = document.createElement('div');
+
+    const spanHora = document.createElement('span');
+    spanHora.className = 'log-time';
+    spanHora.textContent = '[' + dados.hora + '] ';
+
+    const spanNivel = document.createElement('span');
+    spanNivel.className = 'log-' + dados.nivel;
+    spanNivel.textContent = '[' + dados.nivel.toUpperCase() + '] ';
+
+    linha.appendChild(spanHora);
+    linha.appendChild(spanNivel);
+    linha.appendChild(document.createTextNode(dados.mensagem));
+
+    console_.appendChild(linha);
+    console_.scrollTop = console_.scrollHeight;
+  }
+
+  const fonte = new EventSource("{{ url_for('logs.stream') }}");
+  fonte.onopen = () => marcarConectado(true);
+  fonte.onmessage = adicionarLinha;
+  fonte.onerror = () => marcarConectado(false);
+})();
+</script>
+{% endblock %}

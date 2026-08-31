@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Autorizar ML{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Autenticação</div>
+  <h1>Autorizar Mercado Livre · {{ conta_ativa }}</h1>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+
+    {% if config and config.ml_seller_id %}
+    <div class="alert alert-success">
+      <i class="bi bi-check-circle me-1"></i>
+      Essa conta já está conectada. Seller ID: <strong>{{ config.ml_seller_id }}</strong>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      Essa conta ainda não está autorizada no Mercado Livre.
+    </div>
+    {% endif %}
+
+    <div class="card p-3 mb-3">
+      <p class="text-muted small mb-2">
+        <strong>Antes de continuar:</strong> cadastre a URL abaixo como "URI de redirecionamento" (redirect URI)
+        no seu aplicativo em <em>Mercado Livre Developers</em>. Ela precisa ser <u>exatamente</u> essa:
+      </p>
+      <div class="input-group input-group-sm mb-1">
+        <input type="text" class="form-control font-mono" value="{{ redirect_uri }}" id="redirectUriInput" readonly>
+        <button class="btn btn-outline-secondary" type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('redirectUriInput').value)">
+          <i class="bi bi-clipboard"></i>
+        </button>
+      </div>
+      <p class="text-muted small mb-0">
+        <i class="bi bi-info-circle"></i> Se o app estiver rodando num endereço diferente de
+        <code>127.0.0.1:5000</code> (ex: produção), o valor acima muda de acordo — sempre confira antes de autorizar.
+      </p>
+    </div>
+
+    <div class="card p-3">
+      <form action="{{ url_for('ml_auth.autorizar') }}" method="post">
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control" id="client_id" name="client_id"
+                 value="{{ config.ml_client_id if config else '' }}" placeholder="Client ID" required>
+          <label for="client_id">Client ID</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="password" class="form-control" id="client_secret" name="client_secret"
+                 placeholder="Client Secret" required>
+          <label for="client_secret">Client Secret</label>
+        </div>
+        <button type="submit" class="btn btn-acp-orange">
+          <i class="bi bi-box-arrow-up-right me-1"></i>
+          {{ 'Reautorizar' if config and config.ml_seller_id else 'Autorizar no Mercado Livre' }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card p-3 bg-light border-0">
+      <h6 class="fw-bold mb-2"><i class="bi bi-info-circle me-1"></i> Como funciona</h6>
+      <ol class="small text-muted mb-0 ps-3">
+        <li>Você cola o Client ID e Client Secret do seu app no Mercado Livre Developers.</li>
+        <li>Ao clicar em "Autorizar", você é levado pra tela oficial de login do Mercado Livre.</li>
+        <li>Depois de aceitar, o Mercado Livre te manda de volta pra esse sistema automaticamente
+            (sem precisar copiar código nenhum — diferente do sistema desktop antigo).</li>
+        <li>O sistema troca o código pelo token de acesso e já busca o Seller ID sozinho.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

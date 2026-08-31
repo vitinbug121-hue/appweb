@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Reembolso{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+  <div>
+    <div class="eyebrow">Mercado Pago</div>
+    <h1>Reembolsar Link</h1>
+  </div>
+  {% if vendas %}
+  <form action="{{ url_for('reembolso.reembolsar_todos') }}" method="post"
+        onsubmit="return confirm('Reembolsar todas as {{ vendas|length }} vendas pendentes desta conta?');">
+    <button type="submit" class="btn btn-acp-orange">
+      <i class="bi bi-cash-stack me-1"></i> Reembolsar todas ({{ vendas|length }})
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+{% if tokens_cadastrados == 0 %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle me-1"></i>
+  Nenhum token de reembolso cadastrado (tabela <code>tokens_reembolso_mp</code>, compartilhada entre
+  todas as contas — mesmo comportamento do sistema desktop original). Qualquer tentativa de reembolso
+  vai falhar até cadastrar ao menos um.
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Ordem</th>
+          <th>Produto</th>
+          <th>Valor</th>
+          <th>Pago em</th>
+          <th class="text-end">Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for venda in vendas %}
+        <tr>
+          <td class="font-mono small">{{ venda.order_id }}</td>
+          <td>{{ venda.produto or '—' }}</td>
+          <td>{{ venda.valor or '—' }}</td>
+          <td>{{ venda.data_boleto_pago or '—' }}</td>
+          <td class="text-end">
+            <form action="{{ url_for('reembolso.reembolsar', venda_id=venda.id) }}" method="post" class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-cash-coin me-1"></i>Reembolsar
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Nenhuma venda pendente de reembolso para essa conta.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

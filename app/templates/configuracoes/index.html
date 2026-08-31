@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Configurações{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Sistema</div>
+  <h1>Configuração de Tokens</h1>
+</div>
+
+<div class="card p-3 mb-4 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <div class="fw-semibold"><i class="bi bi-shop me-1"></i> Conexão com o Mercado Livre</div>
+    <div class="text-muted small">Autorização OAuth para a conta {{ conta_ativa }}</div>
+  </div>
+  <a href="{{ url_for('ml_auth.autorizar') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-box-arrow-up-right me-1"></i> Gerenciar autorização
+  </a>
+</div>
+
+<div class="row g-4">
+
+  <!-- Tokens Mercado Pago (da conta ativa) -->
+  <div class="col-lg-6">
+    <h6 class="text-uppercase text-muted fw-bold small mb-3" style="letter-spacing:.06em">
+      Tokens Mercado Pago — {{ conta_ativa }}
+    </h6>
+    <div class="card p-3 mb-3">
+      <p class="text-muted small mb-3">
+        Usados na conciliação de pagamentos ("Atualizar Pagos"). Se houver mais de um, o sistema
+        testa em carrossel — igual ao sistema original.
+      </p>
+
+      <form action="{{ url_for('configuracoes.adicionar_token_mp') }}" method="post" class="d-flex gap-2 mb-3">
+        <input type="text" name="token" class="form-control form-control-sm" placeholder="Colar token do Mercado Pago" required>
+        <button type="submit" class="btn btn-sm btn-acp-orange text-nowrap">
+          <i class="bi bi-plus-circle me-1"></i>Adicionar
+        </button>
+      </form>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <tbody>
+            {% for t in tokens_mp %}
+            <tr>
+              <td class="font-mono small">
+                {{ t.token[:6] }}...{{ t.token[-4:] if t.token|length > 10 else '' }}
+              </td>
+              <td class="text-end" style="width: 1%;">
+                <form action="{{ url_for('configuracoes.remover_token_mp', token_id=t.id) }}" method="post"
+                      onsubmit="return confirm('Remover este token?');">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td class="text-center text-muted py-3">Nenhum token cadastrado para essa conta.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tokens de Reembolso (compartilhados) -->
+  <div class="col-lg-6">
+    <h6 class="text-uppercase text-muted fw-bold small mb-3" style="letter-spacing:.06em">
+      Tokens de Reembolso <span class="badge badge-soft-neutral">compartilhados</span>
+    </h6>
+    <div class="card p-3 mb-3">
+      <p class="text-muted small mb-3">
+        Usados na ação "Reembolsar" (<code>/reembolso</code>). São compartilhados entre TODAS as
+        contas — mesmo comportamento do sistema desktop original.
+      </p>
+
+      <form action="{{ url_for('configuracoes.adicionar_token_reembolso') }}" method="post" class="d-flex gap-2 mb-3">
+        <input type="text" name="token" class="form-control form-control-sm" placeholder="Colar token de reembolso" required>
+        <button type="submit" class="btn btn-sm btn-acp-orange text-nowrap">
+          <i class="bi bi-plus-circle me-1"></i>Adicionar
+        </button>
+      </form>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <tbody>
+            {% for t in tokens_reembolso %}
+            <tr>
+              <td class="font-mono small">
+                {{ t.token[:6] }}...{{ t.token[-4:] if t.token|length > 10 else '' }}
+              </td>
+              <td>
+                {% if t.ativo %}
+                  <span class="badge badge-soft-success">Ativo</span>
+                {% else %}
+                  <span class="badge badge-soft-neutral">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-end" style="width: 1%;">
+                <div class="d-flex gap-2 justify-content-end">
+                  <form action="{{ url_for('configuracoes.toggle_token_reembolso', token_id=t.id) }}" method="post">
+                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-toggle2-on"></i></button>
+                  </form>
+                  <form action="{{ url_for('configuracoes.remover_token_reembolso', token_id=t.id) }}" method="post"
+                        onsubmit="return confirm('Remover este token?');">
+                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-3">Nenhum token de reembolso cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

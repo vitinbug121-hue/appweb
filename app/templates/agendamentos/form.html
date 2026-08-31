@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Novo agendamento{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Automação</div>
+  <h1>Novo agendamento</h1>
+</div>
+
+<div class="card p-4" style="max-width: 560px;">
+  <form method="post" action="{{ url_for('agendamentos.novo') }}">
+
+    <div class="form-floating mb-3">
+      <input type="text" class="form-control" id="nome" name="nome" placeholder="Nome" required>
+      <label for="nome">Nome do agendamento</label>
+    </div>
+
+    <div class="form-floating mb-3">
+      <select class="form-select" id="conta_id" name="conta_id" required>
+        <option value="" disabled selected>Selecione...</option>
+        {% for conta in contas %}
+        <option value="{{ conta.id }}">{{ conta.email }}</option>
+        {% endfor %}
+      </select>
+      <label for="conta_id">Conta</label>
+    </div>
+
+    <div class="form-floating mb-3">
+      <select class="form-select" id="acao" name="acao" required>
+        <option value="" disabled selected>Selecione...</option>
+        {% for chave, label in acoes_label.items() %}
+        <option value="{{ chave }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <label for="acao">Ação</label>
+    </div>
+
+    <div class="form-floating mb-3">
+      <select class="form-select" id="tipo" name="tipo" onchange="document.getElementById('campo-data').classList.toggle('d-none', this.value !== 'unica')">
+        <option value="diaria" selected>Diária</option>
+        <option value="unica">Única</option>
+      </select>
+      <label for="tipo">Tipo</label>
+    </div>
+
+    <div class="form-floating mb-3 d-none" id="campo-data">
+      <input type="text" class="form-control" id="data" name="data" placeholder="DD/MM/AAAA">
+      <label for="data">Data (para tipo "única")</label>
+    </div>
+
+    <div class="form-floating mb-3">
+      <input type="text" class="form-control" id="horarios" name="horarios" placeholder="08:00, 14:00" required>
+      <label for="horarios">Horários (separados por vírgula)</label>
+    </div>
+
+    <div class="form-check form-switch mb-4">
+      <input class="form-check-input" type="checkbox" id="ativo" name="ativo" checked>
+      <label class="form-check-label" for="ativo">Ativo</label>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-acp-orange">
+        <i class="bi bi-check-circle me-1"></i> Salvar
+      </button>
+      <a href="{{ url_for('agendamentos.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

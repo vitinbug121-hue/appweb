@@ -1,0 +1,265 @@
+/* ==========================================================
+   AppColetorPro Web — tema
+   Paleta herdada do sistema desktop:
+   azul-marinho #002357 · laranja #FF6600 · verde #28a745 · vermelho #dc3545
+   ========================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --acp-navy: #002357;
+  --acp-navy-dark: #001838;
+  --acp-orange: #FF6600;
+  --acp-orange-dark: #E05A00;
+  --acp-bg: #F4F6F9;
+  --acp-surface: #FFFFFF;
+  --acp-border: #E4E9F0;
+  --acp-text: #1C2536;
+  --acp-text-muted: #6B7686;
+  --acp-success: #28a745;
+  --acp-danger: #dc3545;
+  --acp-warning: #d4a017;
+
+  /* remapeia as variáveis do Bootstrap para a marca */
+  --bs-primary: var(--acp-navy);
+  --bs-primary-rgb: 0, 35, 87;
+  --bs-body-bg: var(--acp-bg);
+  --bs-body-color: var(--acp-text);
+  --bs-border-color: var(--acp-border);
+  --bs-body-font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bs-border-radius: 0.6rem;
+  --bs-border-radius-lg: 0.85rem;
+  --bs-border-radius-sm: 0.4rem;
+}
+
+body {
+  background-color: var(--acp-bg);
+  color: var(--acp-text);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ---------- Navbar ---------- */
+.navbar-acp {
+  background: linear-gradient(180deg, var(--acp-navy) 0%, var(--acp-navy-dark) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 4px 16px rgba(0, 15, 40, 0.18);
+  padding-top: .55rem;
+  padding-bottom: .55rem;
+}
+
+.navbar-acp .navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+  color: #fff;
+}
+
+.navbar-acp .brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--acp-orange);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: .95rem;
+  box-shadow: 0 2px 8px rgba(255, 102, 0, 0.45);
+  flex-shrink: 0;
+}
+
+.navbar-acp .brand-text small {
+  display: block;
+  font-size: .68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-top: -2px;
+}
+
+.navbar-acp .nav-link {
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-weight: 500;
+  font-size: .925rem;
+  padding: .5rem .9rem !important;
+  border-radius: .5rem;
+  transition: background-color .15s ease, color .15s ease;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+.navbar-acp .nav-link i {
+  font-size: 1rem;
+  opacity: .85;
+}
+
+.navbar-acp .nav-link:hover {
+  color: #fff !important;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.navbar-acp .nav-link.active {
+  color: #fff !important;
+  background-color: rgba(255, 102, 0, 0.16);
+  position: relative;
+}
+
+.navbar-acp .nav-link.active::after {
+  content: "";
+  position: absolute;
+  left: .9rem;
+  right: .9rem;
+  bottom: -1px;
+  height: 2px;
+  background: var(--acp-orange);
+  border-radius: 2px;
+}
+
+/* Seletor de contexto (Cliente/Desenvolvedor) */
+.context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  padding: .32rem .7rem;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.context-pill .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3ddc84;
+  box-shadow: 0 0 0 3px rgba(61, 220, 132, 0.2);
+}
+
+.context-pill.is-dev .dot {
+  background: var(--acp-orange);
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.22);
+}
+
+/* Botão de conta ativa */
+.account-switcher .btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: .875rem;
+  font-weight: 500;
+}
+
+.account-switcher .btn:hover,
+.account-switcher .btn:focus {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Botão de destaque (laranja) */
+.btn-acp-orange {
+  background-color: var(--acp-orange);
+  border-color: var(--acp-orange);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-acp-orange:hover,
+.btn-acp-orange:focus {
+  background-color: var(--acp-orange-dark);
+  border-color: var(--acp-orange-dark);
+  color: #fff;
+}
+
+/* ---------- Layout de conteúdo ---------- */
+.page-header {
+  border-bottom: 1px solid var(--acp-border);
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.page-header .eyebrow {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--acp-orange);
+}
+
+.page-header h1 {
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--acp-navy);
+  margin-bottom: 0;
+}
+
+/* ---------- Cards ---------- */
+.card {
+  border: 1px solid var(--acp-border);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.card-acp-action {
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  cursor: pointer;
+}
+
+.card-acp-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 35, 87, 0.1);
+  border-color: rgba(255, 102, 0, 0.35);
+}
+
+.card-acp-action .icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: .6rem;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 35, 87, 0.06);
+  color: var(--acp-navy);
+  font-size: 1.15rem;
+}
+
+/* ---------- Status badges ---------- */
+.badge-soft-success { background: rgba(40, 167, 69, .12); color: #1e7e34; font-weight: 600; }
+.badge-soft-warning { background: rgba(212, 160, 23, .14); color: #8a6d13; font-weight: 600; }
+.badge-soft-danger  { background: rgba(220, 53, 69, .12); color: #b02a37; font-weight: 600; }
+.badge-soft-neutral { background: rgba(107, 118, 134, .12); color: var(--acp-text-muted); font-weight: 600; }
+
+/* ---------- Console de log ---------- */
+.log-console {
+  background: #0B1220;
+  color: #D7E1F0;
+  border-radius: var(--bs-border-radius-lg);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: .82rem;
+  line-height: 1.55;
+  padding: 1rem 1.1rem;
+  height: 320px;
+  overflow-y: auto;
+}
+
+.log-console .log-info { color: #7CA8FF; }
+.log-console .log-sucesso { color: #4ADE80; }
+.log-console .log-aviso { color: #FBBF24; }
+.log-console .log-erro { color: #FB7185; }
+.log-console .log-time { color: #4B5B75; }
+
+/* ---------- Rodapé / utilidades ---------- */
+.footer-acp {
+  color: var(--acp-text-muted);
+  font-size: .8rem;
+}
+
+::selection {
+  background: rgba(255, 102, 0, 0.25);
+}
