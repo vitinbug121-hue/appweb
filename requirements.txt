@@ -1,3 +1,6 @@
-flask
-psycopg2-binary
+Flask
 gunicorn
+psycopg2-binary
+requests
+mercadopago
+APScheduler
