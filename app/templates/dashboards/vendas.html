@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Dashboard de vendas{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="eyebrow">Etapa 9</div>
+  <h1>Status das vendas</h1>
+</div>
+<div class="card p-3 mb-4">
+  <div class="text-muted small mb-3">Cada pedido aparece em uma única etapa. Total: <strong>{{ d.total }}</strong>. Conta: <strong>{{ conta_ativa }}</strong>.</div>
+  {% for b in d.barras %}
+  <div class="mb-3">
+    <div class="d-flex justify-content-between small mb-1">
+      <span>{{ b.etapa }}</span><span class="fw-semibold">{{ b.quantidade }}</span>
+    </div>
+    <div class="progress" style="height: 14px;">
+      <div class="progress-bar" role="progressbar" style="width: {{ b.percentual }}%;" aria-valuenow="{{ b.quantidade }}"></div>
+    </div>
+    {% if b.ids %}
+    <details class="mt-1"><summary class="small text-muted">Ver IDs</summary>
+      <div class="small font-monospace">{{ b.ids | join(', ') }}</div>
+    </details>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

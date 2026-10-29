@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Taxar e Autorizar{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Etapa 2</div>
+  <h1>Taxar e autorizar boleto</h1>
+</div>
+
+<div class="card p-3 mb-4">
+  <p class="text-muted small mb-3">
+    Avisa o cliente sobre a taxa de importação e pede a autorização com "DIGITE 1".
+    Só recebe quem ainda não tem boleto enviado nem autorização registrada. Conta: <strong>{{ conta_ativa }}</strong>.
+  </p>
+  <form method="post" class="row g-2">
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Forma de cobrança</label>
+      <select name="forma" class="form-select form-select-sm" required>
+        <option value="pix">PIX</option>
+        <option value="mp">Boleto Mercado Pago</option>
+        <option value="asaas">Boleto Asaas</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Data de entrega (se pago hoje)</label>
+      <input type="text" name="data_entrega" class="form-control form-control-sm" placeholder="ex.: 25/11/2026" required>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Quantidade</label>
+      <input type="number" name="limite" class="form-control form-control-sm" value="20" min="1">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Lote</label>
+      <select name="lote" class="form-select form-select-sm">
+        <option value="">Sequencial</option>
+        {% for lote in lotes %}
+        <option value="{{ lote.numero }}">Lote {{ lote.numero }} · {{ lote.data_label }} · {{ lote.quantidade }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 text-end">
+      <button type="submit" class="btn btn-sm btn-acp-orange"><i class="bi bi-shield-check me-1"></i>Taxar e autorizar</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

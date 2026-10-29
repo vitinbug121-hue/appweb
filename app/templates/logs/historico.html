@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Histórico de logs{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Auditoria</div>
+  <h1>Histórico de logs</h1>
+</div>
+
+<div class="card p-3 mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Tipo</label>
+      <select name="nivel" class="form-select form-select-sm">
+        <option value="">Todos</option>
+        {% for n in niveis %}
+        <option value="{{ n }}" {% if nivel == n %}selected{% endif %}>{{ n|upper }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">ID da ordem</label>
+      <input type="text" name="ordem" value="{{ ordem }}" class="form-control form-control-sm" placeholder="ex.: 2000018958929916">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Dia</label>
+      <input type="date" name="dia" value="{{ dia }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Texto na mensagem</label>
+      <input type="text" name="texto" value="{{ texto }}" class="form-control form-control-sm" placeholder="ex.: falha">
+    </div>
+    <div class="col-md-2 form-check">
+      <input class="form-check-input" type="checkbox" name="todas" id="todas" {% if todas %}checked{% endif %}>
+      <label class="form-check-label small" for="todas">Todas as contas</label>
+    </div>
+    <div class="col-md-1 d-grid gap-1">
+      <button class="btn btn-sm btn-acp-orange">Filtrar</button>
+      <a href="{{ url_for('logs.historico') }}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+    </div>
+  </form>
+  <div class="text-muted small mt-2">
+    {% if not todas %}Conta: <strong>{{ conta_ativa }}</strong>. {% endif %}
+    {{ r.total }} registro(s) encontrado(s). Página {{ r.pagina }} de {{ r.paginas }}.
+  </div>
+</div>
+
+<div class="card p-0 mb-3">
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 align-middle" style="font-size: .85rem;">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 150px;">Data e hora</th>
+          <th style="width: 110px;">Tipo</th>
+          {% if todas %}<th style="width: 220px;">Conta</th>{% endif %}
+          <th>Mensagem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in r.registros %}
+        <tr>
+          <td class="text-nowrap font-monospace">{{ l.timestamp }}</td>
+          <td>
+            <span class="badge {% if l.nivel == 'erro' %}bg-danger{% elif l.nivel == 'sucesso' %}bg-success{% elif l.nivel == 'aviso' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+              {{ l.nivel|upper }}
+            </span>
+          </td>
+          {% if todas %}<td class="small">{{ l.conta }}</td>{% endif %}
+          <td class="font-monospace">{{ l.mensagem }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">Nenhum registro com esses filtros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if r.paginas > 1 %}
+<nav class="d-flex justify-content-center gap-2">
+  {% if r.pagina > 1 %}
+  <a class="btn btn-sm btn-outline-secondary" href="?{{ base }}&pagina={{ r.pagina - 1 }}">Anterior</a>
+  {% endif %}
+  <span class="align-self-center small text-muted">{{ r.pagina }} / {{ r.paginas }}</span>
+  {% if r.pagina < r.paginas %}
+  <a class="btn btn-sm btn-outline-secondary" href="?{{ base }}&pagina={{ r.pagina + 1 }}">Próxima</a>
+  {% endif %}
+</nav>
+{% endif %}
+
+{% endblock %}

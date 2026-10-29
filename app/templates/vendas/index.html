@@ -49,8 +49,12 @@
           </td>
           <td class="text-end">
             {% if not venda.rastreio_enviado %}
-            <form action="{{ url_for('vendas.rota_enviar_rastreio', venda_id=venda.id) }}"
+            <form action="{{ url_for('vendas.rota_enviar_rastreio', order_id=venda.order_id) }}"
                   method="post" class="d-flex gap-2 justify-content-end">
+              <select name="tipo_rastreio" class="form-select form-select-sm" style="max-width: 130px;">
+                <option value="br">BR (Correios)</option>
+                <option value="aliexpress">AliExpress</option>
+              </select>
               <input type="text" name="codigo_rastreio" class="form-control form-control-sm"
                      placeholder="Código de rastreio" style="max-width: 160px;" required>
               <button type="submit" class="btn btn-sm btn-acp-orange text-nowrap">
@@ -58,13 +62,13 @@
               </button>
             </form>
             {% elif not venda.boleto_enviado %}
-            <form action="{{ url_for('vendas.rota_enviar_boleto', venda_id=venda.id) }}" method="post" class="d-flex justify-content-end">
+            <form action="{{ url_for('vendas.rota_enviar_boleto', order_id=venda.order_id) }}" method="post" class="d-flex justify-content-end">
               <button type="submit" class="btn btn-sm btn-acp-orange text-nowrap">
                 <i class="bi bi-receipt me-1"></i>Enviar Boleto
               </button>
             </form>
             {% elif venda.boleto_pago and not venda.boleto_pago_agradecimento %}
-            <form action="{{ url_for('vendas.rota_enviar_agradecimento', venda_id=venda.id) }}"
+            <form action="{{ url_for('vendas.rota_enviar_agradecimento', order_id=venda.order_id) }}"
                   method="post" class="d-flex gap-2 justify-content-end">
               <input type="text" name="data_entrega" class="form-control form-control-sm"
                      placeholder="Ex: amanhã" style="max-width: 140px;" required>

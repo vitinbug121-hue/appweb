@@ -1,8 +1,10 @@
 Flask
 gunicorn
-psycopg2-binary
+pymongo
 requests
 mercadopago
-APScheduler
 pandas
 openpyxl
+xlsxwriter
+cryptography
+selenium

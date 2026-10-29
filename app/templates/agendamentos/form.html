@@ -3,66 +3,74 @@
 {% block content %}
 
 <div class="page-header">
-  <div class="eyebrow">Automação</div>
+  <div class="eyebrow">Agendamentos</div>
   <h1>Novo agendamento</h1>
 </div>
 
-<div class="card p-4" style="max-width: 560px;">
-  <form method="post" action="{{ url_for('agendamentos.novo') }}">
-
-    <div class="form-floating mb-3">
-      <input type="text" class="form-control" id="nome" name="nome" placeholder="Nome" required>
-      <label for="nome">Nome do agendamento</label>
+<div class="card p-3 mb-4">
+  <form method="post" action="{{ url_for('agendamentos.novo') }}" class="row g-2">
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Nome</label>
+      <input type="text" name="nome" class="form-control form-control-sm" required>
     </div>
-
-    <div class="form-floating mb-3">
-      <select class="form-select" id="conta_id" name="conta_id" required>
-        <option value="" disabled selected>Selecione...</option>
-        {% for conta in contas %}
-        <option value="{{ conta.id }}">{{ conta.email }}</option>
-        {% endfor %}
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Conta</label>
+      <select name="conta_id" class="form-select form-select-sm" required>
+        {% for c in contas %}<option value="{{ c.id }}">{{ c.nome_exibicao }}</option>{% endfor %}
       </select>
-      <label for="conta_id">Conta</label>
     </div>
-
-    <div class="form-floating mb-3">
-      <select class="form-select" id="acao" name="acao" required>
-        <option value="" disabled selected>Selecione...</option>
-        {% for chave, label in acoes_label.items() %}
-        <option value="{{ chave }}">{{ label }}</option>
-        {% endfor %}
-      </select>
-      <label for="acao">Ação</label>
-    </div>
-
-    <div class="form-floating mb-3">
-      <select class="form-select" id="tipo" name="tipo" onchange="document.getElementById('campo-data').classList.toggle('d-none', this.value !== 'unica')">
-        <option value="diaria" selected>Diária</option>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Tipo</label>
+      <select name="tipo" class="form-select form-select-sm">
+        <option value="diaria">Diária</option>
         <option value="unica">Única</option>
       </select>
-      <label for="tipo">Tipo</label>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Data (se única)</label>
+      <input type="text" name="data" class="form-control form-control-sm" placeholder="dd/mm/aaaa">
+    </div>
+    <div class="col-md-8">
+      <label class="form-label small mb-1">Ação</label>
+      <select name="acao" class="form-select form-select-sm" required>
+        {% for chave, label in acoes_label.items() %}<option value="{{ chave }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Horários (HH:MM, separados por vírgula)</label>
+      <input type="text" name="horarios" class="form-control form-control-sm" placeholder="09:00, 15:00" required>
     </div>
 
-    <div class="form-floating mb-3 d-none" id="campo-data">
-      <input type="text" class="form-control" id="data" name="data" placeholder="DD/MM/AAAA">
-      <label for="data">Data (para tipo "única")</label>
+    <div class="col-12 mt-2"><div class="fw-semibold small">Parâmetros da ação</div>
+      <div class="form-text">Preencha só os que a ação escolhida usa.</div></div>
+    <div class="col-md-3"><label class="form-label small mb-1">Prazo de entrega (solicitar)</label><input type="text" name="prazo" class="form-control form-control-sm"></div>
+    <div class="col-md-2"><label class="form-label small mb-1">Offset (solicitar)</label><input type="number" name="offset" class="form-control form-control-sm" min="0"></div>
+    <div class="col-md-2"><label class="form-label small mb-1">Quantidade</label><input type="number" name="limite" class="form-control form-control-sm" min="1" max="200"></div>
+    <div class="col-md-2"><label class="form-label small mb-1">Forma (pix, mp, asaas)</label><input type="text" name="forma" class="form-control form-control-sm"></div>
+    <div class="col-md-3"><label class="form-label small mb-1">Data de entrega</label><input type="text" name="data_entrega" class="form-control form-control-sm"></div>
+    <div class="col-md-2"><label class="form-label small mb-1">Lote (vazio = todos)</label><input type="number" name="lote" class="form-control form-control-sm" min="1"></div>
+    <div class="col-md-2"><label class="form-label small mb-1">Máx. reembolsos</label><input type="number" name="limite_reembolso" class="form-control form-control-sm" min="1" max="100"></div>
+    <div class="col-md-4 d-flex align-items-end gap-3">
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="atraso" id="atraso"><label class="form-check-label small" for="atraso">Pedido de desculpas antes</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="filtrar_frase" id="filtrar"><label class="form-check-label small" for="filtrar">Só quem recebeu a frase</label></div>
     </div>
 
-    <div class="form-floating mb-3">
-      <input type="text" class="form-control" id="horarios" name="horarios" placeholder="08:00, 14:00" required>
-      <label for="horarios">Horários (separados por vírgula)</label>
+    <div class="col-12 form-check mt-2">
+      <input class="form-check-input" type="checkbox" name="ativo" id="ativo" checked>
+      <label class="form-check-label small" for="ativo">Ativo</label>
     </div>
 
-    <div class="form-check form-switch mb-4">
-      <input class="form-check-input" type="checkbox" id="ativo" name="ativo" checked>
-      <label class="form-check-label" for="ativo">Ativo</label>
+    <div class="col-12 alert alert-warning small mt-2 mb-0">
+      Ações que enviam mensagens ao comprador ou reembolsam rodam <strong>sem supervisão</strong>.
+      Não agende a mesma ação aqui e no sistema desktop: as mensagens sairiam em duplicidade.
+    </div>
+    <div class="col-12 form-check">
+      <input class="form-check-input" type="checkbox" name="confirmo" id="confirmo">
+      <label class="form-check-label small" for="confirmo">Entendo que esta ação, quando for ativa, envia mensagens ou reembolsos automaticamente.</label>
     </div>
 
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-acp-orange">
-        <i class="bi bi-check-circle me-1"></i> Salvar
-      </button>
-      <a href="{{ url_for('agendamentos.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+    <div class="col-12 text-end">
+      <button type="submit" class="btn btn-sm btn-acp-orange"><i class="bi bi-check2 me-1"></i>Salvar agendamento</button>
     </div>
   </form>
 </div>

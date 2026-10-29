@@ -3,45 +3,166 @@
 {% block content %}
 
 <div class="page-header">
-  <div class="eyebrow">Inteligência Artificial</div>
-  <h1>Responder Dúvidas ML</h1>
+  <div class="eyebrow">Inteligência artificial</div>
+  <h1>IA</h1>
 </div>
 
 <div class="row g-4">
-  <div class="col-lg-7">
-    <h6 class="text-uppercase text-muted fw-bold small mb-3" style="letter-spacing:.06em">
-      Script da IA (instrução do sistema)
-    </h6>
-    <div class="card p-3">
-      <form action="{{ url_for('ia.salvar_script') }}" method="post">
-        <textarea class="form-control font-mono small" name="script_question" rows="10"
-                  placeholder="Ex: Você é um atendente da loja X. Responda de forma cordial e objetiva as dúvidas dos clientes sobre prazo de entrega, garantia e formas de pagamento...">{{ script_atual or '' }}</textarea>
-        <button type="submit" class="btn btn-acp-orange mt-3">
-          <i class="bi bi-save me-1"></i> Salvar script
-        </button>
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <div class="fw-semibold mb-1">IA comum</div>
+      <p class="text-muted small mb-2">Conversas e reclamações. Vale para todas as contas.</p>
+      <form method="post" action="{{ url_for('ia.salvar_script_comum') }}">
+        <textarea name="script_comum" rows="12" class="form-control form-control-sm font-monospace mb-2" required>{{ script_comum or '' }}</textarea>
+        <div class="text-end"><button class="btn btn-sm btn-acp-orange">Salvar IA comum</button></div>
       </form>
     </div>
   </div>
 
-  <div class="col-lg-5">
-    <h6 class="text-uppercase text-muted fw-bold small mb-3" style="letter-spacing:.06em">Executar</h6>
-    <div class="card p-3">
-      <p class="text-muted small">
-        Busca todas as perguntas sem resposta nos anúncios da conta ativa, gera uma resposta
-        com a IA usando o script ao lado, e publica de volta no Mercado Livre automaticamente.
-      </p>
-      {% if not script_atual %}
-      <div class="alert alert-warning small mb-3">
-        <i class="bi bi-exclamation-triangle me-1"></i> Cadastre um script antes de executar.
-      </div>
-      {% endif %}
-      <form action="{{ url_for('ia.responder_duvidas') }}" method="post">
-        <button type="submit" class="btn btn-acp-orange w-100" {{ 'disabled' if not script_atual }}>
-          <i class="bi bi-robot me-1"></i> Responder Dúvidas Agora
-        </button>
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <div class="fw-semibold mb-1">IA question</div>
+      <p class="text-muted small mb-2">Dúvidas do Mercado Livre. Vale para todas as contas.</p>
+      <form method="post" action="{{ url_for('ia.salvar_script') }}">
+        <textarea name="script_question" rows="12" class="form-control form-control-sm font-monospace mb-2" required>{{ script_question or '' }}</textarea>
+        <div class="text-end"><button class="btn btn-sm btn-acp-orange">Salvar IA question</button></div>
       </form>
     </div>
   </div>
+</div>
+
+<div class="row g-4 mt-1">
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <div class="fw-semibold mb-2">Responder conversas</div>
+      <p class="text-muted small mb-2">Conta: <strong>{{ conta_ativa }}</strong>. Só entram pedidos solicitados.</p>
+      <form method="post" action="{{ url_for('ia.responder_conversas') }}" class="row g-2">
+        <div class="col-4">
+          <label class="form-label small mb-1">Quantidade</label>
+          <input type="number" name="limite" value="20" min="1" max="200" class="form-control form-control-sm">
+        </div>
+        <div class="col-8">
+          <label class="form-label small mb-1">Lote</label>
+          <select name="lote" class="form-select form-select-sm">
+            <option value="">Todos os lotes</option>
+            {% for l in lotes %}<option value="{{ l.numero }}">Lote {{ l.numero }} · {{ l.data_label }} · {{ l.quantidade }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12 form-check">
+          <input class="form-check-input" type="checkbox" name="excluir_pix" id="excluir_pix">
+          <label class="form-check-label small" for="excluir_pix">Não enviar para quem foi cobrado via PIX</label>
+        </div>
+        <div class="col-12 form-check">
+          <input class="form-check-input" type="checkbox" name="somente_nao_taxados" id="somente_nao_taxados">
+          <label class="form-check-label small" for="somente_nao_taxados">Enviar só para quem ainda não foi taxado</label>
+        </div>
+        <div class="col-12 text-end">
+          <button class="btn btn-sm btn-acp-orange">Responder conversas</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <div class="fw-semibold mb-2">Responder dúvidas ML</div>
+      <p class="text-muted small mb-3">Busca as perguntas sem resposta nos anúncios da conta ativa, gera a resposta com a IA question e publica no Mercado Livre.</p>
+      <form method="post" action="{{ url_for('ia.responder_duvidas') }}" class="text-end">
+        <button class="btn btn-sm btn-acp-orange">Responder dúvidas agora</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card p-3 mt-4">
+  <div class="fw-semibold mb-1">Testar IA</div>
+  <p class="text-muted small mb-3">Digite a mensagem do cliente e marque a situação da venda. A IA responde aqui.
+    <strong>Nada é enviado ao Mercado Livre.</strong></p>
+
+  <form method="post" action="{{ url_for('ia.testar') }}" class="row g-3">
+    <div class="col-12">
+      <label class="form-label small mb-1">Mensagem do cliente</label>
+      <textarea name="mensagem" rows="3" class="form-control form-control-sm" required>{{ form.get('mensagem', '') if form else '' }}</textarea>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Etapa da venda</label>
+      <select name="etapa" class="form-select form-select-sm">
+        {% for e in etapas %}<option value="{{ e }}" {% if form and form.get('etapa') == e %}selected{% endif %}>{{ e }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Forma da taxa</label>
+      <select name="metodo_taxa" class="form-select form-select-sm">
+        <option value="">Não definida</option>
+        <option value="pix" {% if form and form.get('metodo_taxa') == 'pix' %}selected{% endif %}>PIX</option>
+        <option value="boleto" {% if form and form.get('metodo_taxa') == 'boleto' %}selected{% endif %}>Boleto</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Provedor</label>
+      <select name="provedor_taxa" class="form-select form-select-sm">
+        <option value="">Nenhum</option>
+        <option value="MP" {% if form and form.get('provedor_taxa') == 'MP' %}selected{% endif %}>Mercado Pago</option>
+        <option value="ASAAS" {% if form and form.get('provedor_taxa') == 'ASAAS' %}selected{% endif %}>Asaas</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Tipo de rastreio</label>
+      <select name="tipo_rastreio" class="form-select form-select-sm">
+        <option value="">Nenhum</option>
+        <option value="br" {% if form and form.get('tipo_rastreio') == 'br' %}selected{% endif %}>BR (Correios)</option>
+        <option value="aliexpress" {% if form and form.get('tipo_rastreio') == 'aliexpress' %}selected{% endif %}>AliExpress</option>
+      </select>
+    </div>
+
+    <div class="col-12">
+      <div class="row g-2">
+        {% for chave, rotulo in flags %}
+        <div class="col-md-4 col-6 form-check">
+          <input class="form-check-input" type="checkbox" name="{{ chave }}" id="f_{{ chave }}"
+                 {% if form and form.get(chave) == 'on' %}checked{% endif %}>
+          <label class="form-check-label small" for="f_{{ chave }}">{{ rotulo }}</label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="col-12 text-end">
+      <button class="btn btn-sm btn-acp-orange">Testar IA</button>
+    </div>
+  </form>
+
+  {% if teste %}
+  <hr>
+  <div class="fw-semibold mb-2">Resultado <span class="text-muted small fw-normal">· Etapa: {{ teste.etapa or '—' }}</span></div>
+
+  {% if teste.erro %}
+  <div class="alert alert-danger small">{{ teste.erro }}</div>
+  {% endif %}
+
+  {% if teste.bloqueios %}
+  <div class="alert alert-warning small">
+    <strong>Em produção esta venda não receberia resposta:</strong>
+    <ul class="mb-0">{% for b in teste.bloqueios %}<li>{{ b }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  <div class="small mb-2">
+    Classificador (precisa responder):
+    <strong>{% if teste.precisa is none %}—{% elif teste.precisa %}SIM{% else %}NÃO{% endif %}</strong>
+    {% if teste.motivo %}<span class="text-muted"> · {{ teste.motivo }}</span>{% endif %}
+  </div>
+
+  {% if teste.resposta %}
+  <div class="p-3 rounded-3 bg-light" style="white-space: pre-wrap;">{{ teste.resposta }}</div>
+  {% endif %}
+
+  <details class="mt-2">
+    <summary class="small text-muted">Ver PARAMETROS e prompt enviados à IA</summary>
+    <pre class="small mt-2" style="white-space: pre-wrap;">{{ teste.prompt }}</pre>
+  </details>
+  {% endif %}
 </div>
 
 {% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Vendas encerradas{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Etapa 6</div>
+  <h1>Vendas encerradas</h1>
+</div>
+
+<div class="card p-3 mb-4">
+  <p class="text-muted small mb-3">
+    Busca no Mercado Livre os pedidos cancelados, não entregues, devolvidos ou rejeitados e marca como encerrados
+    os que já existem no sistema. Pedidos que não estão no sistema não são criados. Conta: <strong>{{ conta_ativa }}</strong>.
+    A busca percorre todo o histórico da conta e pode demorar.
+  </p>
+  <form method="post" action="{{ url_for('encerradas.atualizar') }}" class="text-end">
+    <button class="btn btn-sm btn-acp-orange"><i class="bi bi-arrow-repeat me-1"></i>Atualizar vendas encerradas</button>
+  </form>
+</div>
+
+{% endblock %}

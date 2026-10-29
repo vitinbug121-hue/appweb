@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Solicitar{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Etapa 1</div>
+  <h1>Solicitar telefone</h1>
+</div>
+
+<div class="card p-3 mb-4">
+  <p class="text-muted small mb-3">
+    Envia a primeira mensagem com o prazo de entrega e pede o telefone do comprador.
+    Pedidos já solicitados não recebem a mensagem de novo. Conta: <strong>{{ conta_ativa }}</strong>.
+  </p>
+  <form method="post" class="row g-2">
+    <div class="col-md-6">
+      <label class="form-label small mb-1">Prazo estimado de entrega</label>
+      <input type="text" name="prazo" class="form-control form-control-sm" placeholder="ex.: 25/11/2026" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Offset inicial</label>
+      <input type="number" name="offset" class="form-control form-control-sm" value="0" min="0">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Quantidade de pedidos</label>
+      <input type="number" name="limite" class="form-control form-control-sm" value="20" min="1" max="200">
+    </div>
+    <div class="col-12 text-end">
+      <button type="submit" class="btn btn-sm btn-acp-orange"><i class="bi bi-send me-1"></i>Executar</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

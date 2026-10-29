@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Cobranças{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Etapa 3</div>
+  <h1>Cobranças e reenvios</h1>
+</div>
+
+<div class="row g-4">
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Erro no boleto</div>
+      <p class="text-muted small mb-3">Envia o código corrigido para quem já recebeu boleto e ainda não pagou.</p>
+      <form method="post" action="{{ url_for('cobrancas.erro_boleto') }}" class="row g-2">
+        <div class="col-8">
+          <select name="lote" class="form-select form-select-sm">
+            <option value="">Todos (sequencial)</option>
+            {% for lote in lotes %}<option value="{{ lote.numero }}">Lote {{ lote.numero }} · {{ lote.data_label }} · {{ lote.quantidade }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-4 text-end"><button class="btn btn-sm btn-acp-orange">Enviar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Reenviar boleto</div>
+      <p class="text-muted small mb-3">Reenvia o boleto para quem já recebeu um e ainda não pagou.</p>
+      <form method="post" action="{{ url_for('cobrancas.reenviar_boleto') }}" class="row g-2">
+        <div class="col-12 form-check ms-1"><input class="form-check-input" type="checkbox" name="atraso" id="ra"><label class="form-check-label small" for="ra">Enviar pedido de desculpas pelo atraso antes</label></div>
+        <div class="col-12 form-check ms-1"><input class="form-check-input" type="checkbox" name="filtrar_frase" id="rf"><label class="form-check-label small" for="rf">Só para quem recebeu “Estamos gerando seu boleto…”</label></div>
+        <div class="col-8">
+          <select name="lote" class="form-select form-select-sm">
+            <option value="">Todos (sequencial)</option>
+            {% for lote in lotes %}<option value="{{ lote.numero }}">Lote {{ lote.numero }} · {{ lote.data_label }} · {{ lote.quantidade }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-4 text-end"><button class="btn btn-sm btn-acp-orange">Reenviar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Cobrar dobrado</div>
+      <p class="text-muted small mb-3">Cobra a segunda parte da taxa de quem já pagou e recebeu o agradecimento.</p>
+      <form method="post" action="{{ url_for('cobrancas.cobrar_dobrado') }}" class="row g-2">
+        <div class="col-md-4">
+          <select name="metodo" class="form-select form-select-sm">
+            <option value="pix">PIX</option>
+            <option value="boleto">Boleto</option>
+          </select>
+        </div>
+        <div class="col-md-4"><input type="text" name="data_entrega" class="form-control form-control-sm" placeholder="Data de entrega" required></div>
+        <div class="col-md-4">
+          <select name="lote" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for lote in lotes %}<option value="{{ lote.numero }}">Lote {{ lote.numero }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12 text-end"><button class="btn btn-sm btn-acp-orange">Cobrar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Reenviar boleto dobrado</div>
+      <p class="text-muted small mb-3">Reenvia o boleto da cobrança dobrada (apenas para cobranças por boleto).</p>
+      <form method="post" action="{{ url_for('cobrancas.reenviar_boleto_dobrado') }}" class="row g-2">
+        <div class="col-12 form-check ms-1"><input class="form-check-input" type="checkbox" name="atraso" id="da"><label class="form-check-label small" for="da">Enviar pedido de desculpas pelo atraso antes</label></div>
+        <div class="col-12 form-check ms-1"><input class="form-check-input" type="checkbox" name="filtrar_frase" id="df"><label class="form-check-label small" for="df">Só para quem recebeu “Estamos gerando seu Boleto do restante da taxa…”</label></div>
+        <div class="col-8">
+          <select name="lote" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for lote in lotes %}<option value="{{ lote.numero }}">Lote {{ lote.numero }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-4 text-end"><button class="btn btn-sm btn-acp-orange">Reenviar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Cobrar não pagos</div>
+      <p class="text-muted small mb-3">Lembra quem tem boleto enviado há mais de 1 dia e ainda não pagou. Cada pedido recebe uma única vez.</p>
+      <form method="post" action="{{ url_for('cobrancas.nao_pagos') }}" class="row g-2">
+        <div class="col-8">
+          <select name="lote" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for lote in lotes %}<option value="{{ lote.numero }}">Lote {{ lote.numero }} · {{ lote.data_label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-4 text-end"><button class="btn btn-sm btn-acp-orange">Cobrar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Cobrar não autorizados</div>
+      <p class="text-muted small mb-3">Lembra quem recebeu o DIGITE 1 há mais de 1 dia e não respondeu. Quem já respondeu "1" não recebe.</p>
+      <form method="post" action="{{ url_for('cobrancas.nao_autorizados') }}" class="row g-2">
+        
+        <div class="col-8">
+          <select name="lote" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for lote in lotes %}<option value="{{ lote.numero }}">Lote {{ lote.numero }} · {{ lote.data_label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-4 text-end"><button class="btn btn-sm btn-acp-orange">Cobrar</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

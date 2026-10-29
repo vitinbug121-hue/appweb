@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Lotes{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="eyebrow">Etapa 9</div>
+  <h1>Lotes por data de rastreio</h1>
+</div>
+<div class="card p-3 mb-4">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label small mb-1">Filtrar por ID do pedido (ou parte dele)</label>
+      <input type="text" name="filtro" value="{{ filtro }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-6 text-end">
+      <button class="btn btn-sm btn-acp-orange">Filtrar</button>
+      <a href="{{ url_for('dashboards.lotes') }}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+    </div>
+  </form>
+  <div class="text-muted small mt-2">Conta: <strong>{{ conta_ativa }}</strong>. Só entram pedidos com rastreio enviado e sem venda encerrada.</div>
+</div>
+
+<div class="card p-3 mb-4">
+  {% for l in lotes %}
+  <div class="mb-3">
+    <div class="d-flex justify-content-between small mb-1">
+      <span>Lote {{ l.numero }} · {{ l.data_label }}</span><span class="fw-semibold">{{ l.quantidade }}</span>
+    </div>
+    <div class="progress" style="height: 14px;">
+      <div class="progress-bar" role="progressbar" style="width: {{ l.percentual }}%; background-color: #17a2b8;"></div>
+    </div>
+    <details class="mt-1"><summary class="small text-muted">Ver IDs</summary>
+      <div class="small font-monospace">{{ l.ids | join(', ') }}</div>
+    </details>
+  </div>
+  {% else %}
+  <div class="text-muted small">Nenhum lote encontrado para o filtro informado.</div>
+  {% endfor %}
+</div>
+{% endblock %}

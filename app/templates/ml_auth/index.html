@@ -24,8 +24,8 @@
 
     <div class="card p-3 mb-3">
       <p class="text-muted small mb-2">
-        <strong>Antes de continuar:</strong> cadastre a URL abaixo como "URI de redirecionamento" (redirect URI)
-        no seu aplicativo em <em>Mercado Livre Developers</em>. Ela precisa ser <u>exatamente</u> essa:
+        <strong>URI de redirecionamento fixa:</strong> cadastre exatamente esta URL no seu aplicativo em
+        <em>Mercado Livre Developers</em>:
       </p>
       <div class="input-group input-group-sm mb-1">
         <input type="text" class="form-control font-mono" value="{{ redirect_uri }}" id="redirectUriInput" readonly>
@@ -34,14 +34,10 @@
           <i class="bi bi-clipboard"></i>
         </button>
       </div>
-      <p class="text-muted small mb-0">
-        <i class="bi bi-info-circle"></i> Se o app estiver rodando num endereço diferente de
-        <code>127.0.0.1:5000</code> (ex: produção), o valor acima muda de acordo — sempre confira antes de autorizar.
-      </p>
     </div>
 
-    <div class="card p-3">
-      <form action="{{ url_for('ml_auth.autorizar') }}" method="post">
+    <div class="card p-3 mb-3">
+      <form action="{{ url_for('ml_auth.autorizar') }}" method="post" target="_blank" rel="noopener">
         <div class="form-floating mb-3">
           <input type="text" class="form-control" id="client_id" name="client_id"
                  value="{{ config.ml_client_id if config else '' }}" placeholder="Client ID" required>
@@ -61,15 +57,24 @@
   </div>
 
   <div class="col-lg-5">
-    <div class="card p-3 bg-light border-0">
+    <div class="card p-3 bg-light border-0 mb-3">
       <h6 class="fw-bold mb-2"><i class="bi bi-info-circle me-1"></i> Como funciona</h6>
       <ol class="small text-muted mb-0 ps-3">
-        <li>Você cola o Client ID e Client Secret do seu app no Mercado Livre Developers.</li>
-        <li>Ao clicar em "Autorizar", você é levado pra tela oficial de login do Mercado Livre.</li>
-        <li>Depois de aceitar, o Mercado Livre te manda de volta pra esse sistema automaticamente
-            (sem precisar copiar código nenhum — diferente do sistema desktop antigo).</li>
-        <li>O sistema troca o código pelo token de acesso e já busca o Seller ID sozinho.</li>
+        <li>Preencha o Client ID e o Client Secret e clique em autorizar. O Mercado Livre abre numa guia nova.</li>
+        <li>Faça login com a conta do Mercado Livre e aceite a autorização.</li>
+        <li>O Mercado Livre manda o navegador para <code>engoo.com</code>. Não se preocupe se a página abrir com erro.</li>
+        <li>Copie a <strong>URL completa</strong> da barra de endereços e cole no campo ao lado.</li>
       </ol>
+    </div>
+
+    <div class="card p-3">
+      <h6 class="fw-bold mb-2">Colar o retorno</h6>
+      <form action="{{ url_for('ml_auth.codigo') }}" method="post" class="d-grid gap-2">
+        <textarea name="retorno" rows="3" class="form-control form-control-sm font-mono"
+                  placeholder="https://engoo.com/app/daily-news?code=..." required></textarea>
+        <button type="submit" class="btn btn-acp-orange btn-sm">Concluir autorização</button>
+      </form>
+      <p class="text-muted small mt-2 mb-0">O código vale poucos minutos. Se der erro, refaça a autorização.</p>
     </div>
   </div>
 </div>

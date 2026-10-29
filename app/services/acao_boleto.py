@@ -1,82 +1,69 @@
 """
-Ação "Enviar Boleto" — portada do bloco correspondente de
-`passo_1_solicitar` no sistema desktop original: envia 3 mensagens em
-sequência (aviso pré-boleto, código do boleto, pedido de comprovante),
-usando o próximo boleto disponível da conta (tabela `boletos_disponiveis`,
-que substitui a antiga planilha `registros_pedidos.xlsx`).
+Ação "Enviar Boleto" — portada do bloco de `passo_1_solicitar` do desktop.
+Envia 3 mensagens em sequência: aviso pré-boleto, código do boleto e pedido de
+comprovante. Os textos são copiados do desktop (não reescrever).
 """
-from datetime import datetime
-
-from app.db import get_connection
-from app.services import mercadolivre, boletos
+from app.db import agora_texto, atualizar_campos_pedido, obter_config_conta, obter_pedido
+from app.services import boletos, mercadolivre
 from app.services.logger import log_evento
 
 MSG_PRE_BOLETO = (
     "Vamos gerar o boleto agora mesmo!\n\n"
     "Prontinho, boleto gerado! Só copiar todo o código de barras abaixo "
-    "e pagar pelo aplicativo do seu Banco:"
+    "e pagar pelo aplicativo do seu Banco: 👇"
 )
-MSG_COMPROVANTE = "Esperamos o comprovante! Att, Time da loja."
 
 
-def enviar_boleto(conta_id, venda_id):
-    """Executa o fluxo completo de envio de boleto. Retorna (sucesso, detalhe)."""
-    conn = get_connection()
-    venda = conn.execute(
-        "SELECT * FROM vendas WHERE id = ? AND conta_id = ?", (venda_id, conta_id)
-    ).fetchone()
-    conn.close()
+def _msg_comprovante(nome_loja):
+    return f"Esperamos o comprovante! Att, Time {nome_loja}".strip()
 
-    if not venda:
+
+def enviar_boleto(conta, order_id):
+    """Executa o fluxo completo. Retorna (sucesso, detalhe)."""
+    pedido = obter_pedido(conta, order_id)
+    if pedido is None:
         return False, "Venda não encontrada para essa conta."
-
-    if venda["boleto_enviado"]:
+    if pedido.get("boleto_enviado"):
         return False, "Boleto já havia sido enviado para essa ordem."
-
-    if not venda["rastreio_enviado"]:
+    if not pedido.get("rastreio_enviado"):
         return False, "Envie o rastreio antes de enviar o boleto (regra do fluxo original)."
 
-    boleto = boletos.buscar_proximo_boleto_disponivel(conta_id)
+    if str(pedido.get("metodo_taxa") or "").strip().lower() == "pix":
+        # Taxa cobrada via PIX: envia a chave em vez de boleto (regra do desktop).
+        from app.services import pix
+        return pix.enviar_chave(conta, order_id, pedido)
+
+    nome_loja = (obter_config_conta(conta).get("nome_loja") or "").strip()
+    if not nome_loja:
+        return False, "Configure o nome da loja antes de enviar boletos (usado no comprovante)."
+
+    boleto = boletos.buscar_proximo_boleto(conta, pedido.get("provedor_taxa"))
     if not boleto:
-        log_evento(conta_id, "erro", f"Ordem {venda['order_id']}: nenhum boleto disponível cadastrado para essa conta.")
+        log_evento(conta, "erro", f"Ordem {order_id}: nenhum boleto disponível cadastrado para essa conta.")
         return False, "Nenhum boleto disponível — cadastre mais boletos para essa conta."
 
-    order_id, buyer_id = venda["order_id"], venda["buyer_id"]
+    buyer_id = pedido.get("buyer_id")
 
-    sucesso, detalhe = mercadolivre.enviar_mensagem(conta_id, order_id, buyer_id, MSG_PRE_BOLETO)
-    if not sucesso:
-        log_evento(conta_id, "erro", f"Ordem {order_id}: falha ao enviar aviso pré-boleto — {detalhe}")
-        return False, detalhe
+    for texto, etapa in (
+        (MSG_PRE_BOLETO, "aviso pré-boleto"),
+        (boleto["codigo"], "código do boleto"),
+        (_msg_comprovante(nome_loja), "pedido de comprovante"),
+    ):
+        sucesso, detalhe = mercadolivre.enviar_mensagem(conta, order_id, buyer_id, texto)
+        if not sucesso:
+            log_evento(conta, "erro", f"Ordem {order_id}: falha ao enviar {etapa} — {detalhe}")
+            return False, detalhe
 
-    sucesso, detalhe = mercadolivre.enviar_mensagem(conta_id, order_id, buyer_id, boleto["codigo"])
-    if not sucesso:
-        log_evento(conta_id, "erro", f"Ordem {order_id}: falha ao enviar código do boleto — {detalhe}")
-        return False, detalhe
-
-    sucesso, detalhe = mercadolivre.enviar_mensagem(conta_id, order_id, buyer_id, MSG_COMPROVANTE)
-    if not sucesso:
-        log_evento(conta_id, "erro", f"Ordem {order_id}: falha ao enviar pedido de comprovante — {detalhe}")
-        return False, detalhe
-
-    # As 3 mensagens saíram — agora persiste tudo
+    # As 3 mensagens saíram: agora persiste.
     boletos.marcar_boleto_usado(boleto["id"])
+    atualizar_campos_pedido(conta, order_id, {
+        "boleto_enviado": True,
+        "data_boleto": agora_texto(),
+        "codigo_boleto": boleto["codigo"],
+        "id_payment": boleto.get("id_payment"),
+        "horario_boleto": boleto.get("horario"),
+        "provedor": boleto.get("provedor", ""),
+    })
 
-    conn = get_connection()
-    conn.execute(
-        """UPDATE vendas
-           SET boleto_enviado = 1, data_boleto = ?, codigo_boleto = ?,
-               id_payment = ?, horario_boleto = ?
-           WHERE id = ?""",
-        (
-            datetime.now().strftime("%d/%m/%Y %H:%M"),
-            boleto["codigo"],
-            boleto["id_payment"],
-            boleto["horario"],
-            venda_id,
-        ),
-    )
-    conn.commit()
-    conn.close()
-
-    log_evento(conta_id, "sucesso", f"Ordem {order_id}: boleto enviado com sucesso!")
+    log_evento(conta, "sucesso", f"Ordem {order_id}: boleto enviado com sucesso!")
     return True, "Boleto enviado com sucesso (3 mensagens)."

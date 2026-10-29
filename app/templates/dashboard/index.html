@@ -51,11 +51,27 @@
   </div>
 
   <!-- Log -->
-  <div class="col-lg-5">
-    <div class="d-flex align-items-center gap-2 mb-3">
-      <h6 class="text-uppercase text-muted fw-bold small mb-0" style="letter-spacing:.06em">Log em tempo real</h6>
-      <span id="logLiveBadge" class="badge badge-soft-neutral">conectando...</span>
-    </div>
+  <div class="col-lg-5" id="log">
+    <div class="painel-log" id="painelLog">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <h6 class="text-uppercase text-muted fw-bold small mb-0" style="letter-spacing:.06em">Log em tempo real</h6>
+        <span id="logLiveBadge" class="badge badge-soft-neutral">conectando...</span>
+        {% if parada %}
+        <form method="post" action="{{ url_for('acoes.liberar') }}" class="ms-auto">
+          <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-play-circle me-1"></i>Liberar execuções</button>
+        </form>
+        {% else %}
+        <form method="post" action="{{ url_for('acoes.parar') }}" class="ms-auto"
+              onsubmit="return confirm('Parar TODAS as execuções agora?');">
+          <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-stop-circle me-1"></i>PARAR TUDO</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('logs.historico') }}" class="btn btn-sm btn-outline-secondary">Histórico</a>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnExpandirLog"
+                onclick="alternarLogTelaCheia()">
+          <i class="bi bi-arrows-fullscreen me-1"></i><span id="textoExpandir">Expandir</span>
+        </button>
+      </div>
     <div class="log-console" id="logConsole">
       {% for linha in logs %}
       <div>
@@ -64,6 +80,7 @@
         {{ linha.msg }}
       </div>
       {% endfor %}
+    </div>
     </div>
   </div>
 
@@ -98,8 +115,9 @@
     linha.appendChild(spanNivel);
     linha.appendChild(document.createTextNode(dados.mensagem));
 
+    const perto = console_.scrollHeight - console_.scrollTop - console_.clientHeight < 60;
     console_.appendChild(linha);
-    console_.scrollTop = console_.scrollHeight;
+    if (perto) { console_.scrollTop = console_.scrollHeight; }
   }
 
   const fonte = new EventSource("{{ url_for('logs.stream') }}");
@@ -108,4 +126,19 @@
   fonte.onerror = () => marcarConectado(false);
 })();
 </script>
+<script>
+function alternarLogTelaCheia() {
+  const painel = document.getElementById('painelLog');
+  const expandido = painel.classList.toggle('expandido');
+  document.body.classList.toggle('log-travado', expandido);
+  document.getElementById('textoExpandir').textContent = expandido ? 'Fechar' : 'Expandir';
+  document.getElementById('logConsole').scrollTop = document.getElementById('logConsole').scrollHeight;
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('painelLog').classList.contains('expandido')) {
+    alternarLogTelaCheia();
+  }
+});
+</script>
 {% endblock %}
+

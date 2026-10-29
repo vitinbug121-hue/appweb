@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Boletos e PIX pagos{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="eyebrow">Etapa 9</div>
+  <h1>Boletos e PIX pagos por conta</h1>
+</div>
+<div class="card p-3 mb-4">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label small mb-1">Contas</label>
+      <select name="contas" class="form-select form-select-sm" multiple size="4">
+        {% for c in contas %}<option value="{{ c }}" {% if c in contas_sel %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+      <div class="form-text">Sem seleção, mostra todas.</div>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">De</label>
+      <input type="date" name="de" value="{{ de }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Até</label>
+      <input type="date" name="ate" value="{{ ate }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-2 text-end"><button class="btn btn-sm btn-acp-orange">Filtrar</button></div>
+  </form>
+  <div class="text-muted small mt-2">Período pela data de solicitação do pedido.</div>
+</div>
+
+<div class="card p-3 mb-4">
+  <div class="d-flex justify-content-between mb-3">
+    <div><div class="text-muted small">Pedidos pagos</div><div class="fs-4 fw-semibold">{{ d.quantidade_total }}</div></div>
+    <div class="text-end"><div class="text-muted small">Total arrecadado</div><div class="fs-4 fw-semibold">R$ {{ d.total_geral_formatado }}</div></div>
+  </div>
+  {% for l in d.linhas %}
+  <div class="mb-3">
+    <div class="d-flex justify-content-between small mb-1">
+      <span>{{ l.conta }}</span><span class="fw-semibold">{{ l.quantidade }} · R$ {{ l.total_formatado }}</span>
+    </div>
+    <div class="progress" style="height: 14px;">
+      <div class="progress-bar bg-success" role="progressbar" style="width: {{ l.percentual }}%;"></div>
+    </div>
+    <details class="mt-1"><summary class="small text-muted">Ver IDs</summary>
+      <div class="small font-monospace">{{ l.ids | join(', ') }}</div>
+    </details>
+  </div>
+  {% else %}
+  <div class="text-muted small">Nenhum boleto ou PIX pago encontrado no filtro informado.</div>
+  {% endfor %}
+</div>
+{% endblock %}

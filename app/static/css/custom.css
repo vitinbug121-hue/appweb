@@ -59,6 +59,14 @@ body {
   color: #fff;
 }
 
+.navbar-acp .brand-logo {
+  height: 40px;
+  width: auto;
+  border-radius: 8px;
+  background: #fff;
+  padding: 2px;
+}
+
 .navbar-acp .brand-mark {
   width: 34px;
   height: 34px;
@@ -263,3 +271,22 @@ body {
 ::selection {
   background: rgba(255, 102, 0, 0.25);
 }
+
+/* Painel do log: normal e em tela cheia */
+.painel-log.expandido {
+  position: fixed;
+  inset: 16px;
+  z-index: 1050;
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+  display: flex;
+  flex-direction: column;
+}
+.painel-log.expandido .log-console {
+  height: calc(100vh - 120px) !important;
+  max-height: none !important;
+  flex: 1;
+}
+body.log-travado { overflow: hidden; }

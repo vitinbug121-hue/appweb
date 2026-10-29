@@ -46,7 +46,7 @@
           <td>{{ venda.valor or '—' }}</td>
           <td>{{ venda.data_boleto_pago or '—' }}</td>
           <td class="text-end">
-            <form action="{{ url_for('reembolso.reembolsar', venda_id=venda.id) }}" method="post" class="d-flex justify-content-end">
+            <form action="{{ url_for('reembolso.reembolsar', order_id=venda.order_id) }}" method="post" class="d-flex justify-content-end">
               <button type="submit" class="btn btn-sm btn-outline-danger">
                 <i class="bi bi-cash-coin me-1"></i>Reembolsar
               </button>

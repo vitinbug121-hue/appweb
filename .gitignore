@@ -1,0 +1,32 @@
+# ---------- Segredos e configuração local (NUNCA versionar) ----------
+.env
+.env.*
+!.env.example
+*.env.local
+
+# Tokens e configurações exportadas (importação ou cópia manual)
+ml_tokens_autorizacao.json
+config_conta.json
+database_vendas.json
+*.secret
+*.pem
+*.key
+
+# ---------- Dados locais ----------
+database.db
+*.db
+*.sqlite
+*.log
+
+# ---------- Binários e ferramentas locais ----------
+chromedriver.exe
+chromedriver
+*.exe
+*.zip
+
+# ---------- Python ----------
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+.venv/

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}PIX{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Etapa 5</div>
+  <h1>PIX</h1>
+</div>
+
+<div class="row g-4">
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Atualizar PIX pagos</div>
+      <p class="text-muted small mb-3">Lê o chat dos pedidos com taxa via PIX e marca como pagos os que tiverem a frase
+        “Recebemos o pagamento da Taxa.” enviada pela loja. Mensagens do cliente com a mesma frase são ignoradas.</p>
+      <form method="post" action="{{ url_for('pix.atualizar_pagos') }}" class="text-end">
+        <button class="btn btn-sm btn-acp-orange"><i class="bi bi-arrow-repeat me-1"></i>Atualizar PIX pagos</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Aviso PIX → boleto</div>
+      <p class="text-muted small mb-3">Para quem pediu a chave PIX e não pagou, envia o boleto ASAAS no lugar.
+        Usa somente boletos do provedor ASAAS.</p>
+      <form method="post" action="{{ url_for('pix.aviso_boleto') }}" class="row g-2">
+        
+        <div class="col-8">
+          <select name="lote" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for lote in lotes %}<option value="{{ lote.numero }}">Lote {{ lote.numero }} · {{ lote.data_label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-4 text-end"><button class="btn btn-sm btn-acp-orange">Enviar aviso</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Atualizar boletos Asaas pagos</div>
+      <p class="text-muted small mb-3">Consulta na API do Asaas os boletos enviados com provedor ASAAS e marca como pagos os que
+        o Asaas registrar como pagos. Ambiente definido em ASAAS_ENV (sandbox por padrão).</p>
+      <form method="post" action="{{ url_for('pix.asaas_atualizar') }}" class="text-end">
+        <button class="btn btn-sm btn-acp-orange"><i class="bi bi-arrow-repeat me-1"></i>Atualizar Asaas (API)</button>
+      </form>
+      <form method="post" action="{{ url_for('pix.asaas_navegador') }}" class="text-end mt-2">
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-globe me-1"></i>Atualizar Asaas (navegador)</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

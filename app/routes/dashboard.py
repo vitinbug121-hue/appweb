@@ -2,49 +2,47 @@ from datetime import date
 
 from flask import Blueprint, render_template, session, url_for
 
-from app.db import get_connection
+from app.services.controle import parada_ativa
+from app.db import (
+    COLECAO_LOGS,
+    COLECAO_VENDAS,
+    colecao,
+    contar_agendamentos_ativos,
+    contar_pedidos_com,
+    contar_pedidos_regex,
+)
 
 bp = Blueprint("dashboard", __name__, url_prefix="/")
 
 
 def _acoes_rapidas():
-    # Os cards de ação continuam fixos — são atalhos de UI. A ação "rastreio"
-    # já está conectada de verdade (ver app/services/rastreio.py), então
-    # ela linka pra página de Vendas em vez de um placeholder.
+    # Cards de atalho. Ações ainda não portadas apontam para Vendas.
     return [
+        {"icone": "bi-send", "titulo": "Primeira Mensagem", "subtitulo": "Pedir telefone", "acao": "solicitar", "url": url_for("solicitar.index")},
+        {"icone": "bi-shield-check", "titulo": "Taxar e Autorizar", "subtitulo": "Pedir DIGITE 1", "acao": "autorizar", "url": url_for("autorizacao.index")},
+        {"icone": "bi-arrow-repeat", "titulo": "Cobranças", "subtitulo": "Erro, reenvio e dobro", "acao": "cobrancas", "url": url_for("cobrancas.index")},
+        {"icone": "bi-qr-code", "titulo": "PIX", "subtitulo": "Pagos e aviso PIX → boleto", "acao": "pix", "url": url_for("pix.index")},
+        {"icone": "bi-x-circle", "titulo": "Vendas Encerradas", "subtitulo": "Cancelados e não entregues", "acao": "encerradas", "url": url_for("encerradas.index")},
+        {"icone": "bi-gift", "titulo": "Brindes e Reclamações", "subtitulo": "Brinde e encerramento", "acao": "brindes", "url": url_for("brindes.index")},
+        {"icone": "bi-bar-chart", "titulo": "Dashboard de Vendas", "subtitulo": "Status por etapa", "acao": "dash_vendas", "url": url_for("dashboards.vendas")},
+        {"icone": "bi-cash-coin", "titulo": "Boletos Pagos", "subtitulo": "Por conta e período", "acao": "dash_boletos", "url": url_for("dashboards.boletos_pagos")},
+        {"icone": "bi-boxes", "titulo": "Lotes", "subtitulo": "Por data de rastreio", "acao": "dash_lotes", "url": url_for("dashboards.lotes")},
         {"icone": "bi-receipt", "titulo": "Enviar Boleto", "subtitulo": "Taxa de importação", "acao": "boleto", "url": url_for("vendas.index")},
         {"icone": "bi-truck", "titulo": "Enviar Rastreio", "subtitulo": "Código de envio", "acao": "rastreio", "url": url_for("vendas.index")},
         {"icone": "bi-chat-heart", "titulo": "Agradecimento", "subtitulo": "Pós-pagamento", "acao": "agradecimento", "url": url_for("vendas.index")},
         {"icone": "bi-robot", "titulo": "IA Reclamação", "subtitulo": "Resposta automática", "acao": "ia_reclamacao"},
-        {"icone": "bi-arrow-repeat", "titulo": "Atualizar Pagos", "subtitulo": "Conciliação MP", "acao": "atualizar_pagos", "action_url": url_for("acoes.atualizar_pagos_rota")},
+        {"icone": "bi-arrow-repeat", "titulo": "Atualizar Pagos", "subtitulo": "Conciliação MP", "acao": "atualizar_pagos"},
         {"icone": "bi-file-earmark-excel", "titulo": "Exportar Excel", "subtitulo": "Relatório completo", "acao": "exportar", "url": url_for("vendas.exportar")},
     ]
 
 
-def _calcular_kpis(conn, conta_id):
+def _calcular_kpis(conta):
     hoje = date.today().strftime("%d/%m/%Y")
 
-    boletos_pagos_hoje = conn.execute(
-        "SELECT COUNT(*) AS n FROM vendas WHERE conta_id = ? AND boleto_pago = 1 AND data_boleto_pago LIKE ?",
-        (conta_id, f"{hoje}%"),
-    ).fetchone()["n"]
-
-    aguardando_autorizacao = conn.execute(
-        """SELECT COUNT(*) AS n FROM vendas
-           WHERE conta_id = ? AND boleto_autorizado_msg = 1
-             AND boleto_enviado = 0 AND cliente_autorizou = 0""",
-        (conta_id,),
-    ).fetchone()["n"]
-
-    boletos_vencidos = conn.execute(
-        "SELECT COUNT(*) AS n FROM vendas WHERE conta_id = ? AND boleto_vencido = 1",
-        (conta_id,),
-    ).fetchone()["n"]
-
-    agendamentos_ativos = conn.execute(
-        "SELECT COUNT(*) AS n FROM agendamentos WHERE conta_id = ? AND ativo = 1",
-        (conta_id,),
-    ).fetchone()["n"]
+    boletos_pagos_hoje = contar_pedidos_regex(conta, "data_boleto_pago", hoje)
+    aguardando_autorizacao = contar_aguardando_autorizacao(conta)
+    boletos_vencidos = contar_pedidos_com(conta, {"boleto_vencido": True})
+    agendamentos_ativos = contar_agendamentos_ativos(conta)
 
     return [
         {"label": "Boletos pagos hoje", "valor": boletos_pagos_hoje, "badge": "success", "texto_badge": "Hoje"},
@@ -54,25 +52,33 @@ def _calcular_kpis(conn, conta_id):
     ]
 
 
+def contar_aguardando_autorizacao(conta):
+    """Pedidos com autorização enviada, boleto ainda não enviado e cliente não autorizou."""
+    return colecao(COLECAO_VENDAS).count_documents({
+        "conta": conta,
+        "dados.boleto_autorizado_msg": True,
+        "dados.boleto_enviado": {"$ne": True},
+        "dados.cliente_autorizou": {"$ne": True},
+    })
+
+
 @bp.route("/")
 def index():
-    conn = get_connection()
+    conta = session.get("conta_ativa")
+    kpis = _calcular_kpis(conta) if conta else []
 
-    conta_id = session.get("conta_ativa_id")
-    kpis = _calcular_kpis(conn, conta_id) if conta_id else []
-
-    logs_rows = conn.execute(
-        """SELECT nivel, mensagem, timestamp FROM logs
-           WHERE conta_id = ? ORDER BY id DESC LIMIT 8""",
-        (conta_id,),
-    ).fetchall() if conta_id else []
-
-    conn.close()
-
-    logs = [
-        {"hora": row["timestamp"].split(" ")[-1], "nivel": row["nivel"], "msg": row["mensagem"]}
-        for row in reversed(logs_rows)
-    ]
+    logs = []
+    if conta:
+        registros = list(
+            colecao(COLECAO_LOGS)
+            .find({"conta": conta}, {"nivel": 1, "mensagem": 1, "timestamp": 1})
+            .sort("_id", -1)
+            .limit(8)
+        )
+        logs = [
+            {"hora": r["timestamp"].split(" ")[-1], "nivel": r["nivel"], "msg": r["mensagem"]}
+            for r in reversed(registros)
+        ]
 
     return render_template(
         "dashboard/index.html",
@@ -80,4 +86,5 @@ def index():
         kpis=kpis,
         acoes=_acoes_rapidas(),
         logs=logs,
+        parada=parada_ativa(),
     )

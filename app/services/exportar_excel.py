@@ -1,15 +1,13 @@
 """
-Portado de `exportar_para_excel` do sistema desktop original: gera uma
-planilha com todas as vendas da conta, com link clicável pro Mercado
-Livre em cada Order ID e a linha inteira destacada em vermelho quando a
-venda está encerrada. Diferença: aqui não salva em disco — gera em
-memória (BytesIO) e devolve pro navegador baixar direto (`send_file`).
+Exportação de vendas para Excel (portada de `exportar_para_excel` do desktop).
+Gera em memória (BytesIO). Link clicável para o Mercado Livre em cada Order ID;
+linha inteira destacada em vermelho quando a venda está encerrada.
 """
 import io
 
 import pandas as pd
 
-from app.db import get_connection
+from app.db import listar_pedidos
 
 COLUNAS = [
     "Order ID", "Status", "Produto", "Data", "Rastreio", "Cor Produto", "Valor",
@@ -20,42 +18,42 @@ COLUNAS = [
 BASE_URL_ML = "https://www.mercadolivre.com.br/vendas/{}/detalhe#source=excel"
 
 
-def _linha_para_dict(v):
-    if v["boleto_enviado"]:
+def _sim_nao(valor):
+    return "Sim" if valor else "Não"
+
+
+def _linha_para_dict(order_id, d):
+    if d.get("boleto_enviado"):
         status = "Etapa 3"
-    elif v["rastreio_enviado"]:
+    elif d.get("rastreio_enviado"):
         status = "Etapa 2"
     else:
         status = "Etapa 1"
 
     return {
-        "Order ID": v["order_id"],
+        "Order ID": order_id,
         "Status": status,
-        "Produto": v["produto"] or "N/A",
-        "Data": v["data_solicitacao_inicial"] or "N/A",
-        "Rastreio": v["codigo_rastreio"] or "Pendente",
-        "Cor Produto": v["cor_produto"] or "N/A",
-        "Valor": v["valor"] or "N/A",
-        "Numero": v["zap_extraido"] or "N/A",
-        "Boleto Enviado": v["codigo_boleto"] or "N/A",
-        "Id Payment": v["id_payment"] or "N/A",
-        "Boleto Pago": "Sim" if v["boleto_pago"] else "Não",
-        "Boleto Vencido": "Sim" if v["boleto_vencido"] else "Não",
-        "Horario Boleto": v["horario_boleto"] or "N/A",
-        "Encerrada": "Sim" if v["encerrada"] else "Não",
-        "Data Boleto": v["data_boleto"] or "N/A",
+        "Produto": d.get("produto") or "N/A",
+        "Data": d.get("data_solicitacao_inicial") or "N/A",
+        "Rastreio": d.get("codigo_rastreio") or "Pendente",
+        "Cor Produto": d.get("corProduto") or "N/A",
+        "Valor": d.get("valor") or "N/A",
+        "Numero": d.get("zap_extraido") or "N/A",
+        "Boleto Enviado": d.get("codigo_boleto") or "N/A",
+        "Id Payment": d.get("id_payment") or "N/A",
+        "Boleto Pago": _sim_nao(d.get("boleto_pago") or d.get("pago_via_pix")),
+        "Boleto Vencido": _sim_nao(d.get("boleto_vencido")),
+        "Horario Boleto": d.get("horario_boleto") or "N/A",
+        "Encerrada": _sim_nao(d.get("encerrada")),
+        "Data Boleto": d.get("data_boleto") or "N/A",
     }
 
 
-def gerar_excel_vendas(conta_id):
+def gerar_excel_vendas(conta):
     """Retorna um BytesIO já posicionado no início, pronto pra `send_file`."""
-    conn = get_connection()
-    vendas = conn.execute(
-        "SELECT * FROM vendas WHERE conta_id = ? ORDER BY id", (conta_id,)
-    ).fetchall()
-    conn.close()
-
-    df = pd.DataFrame([_linha_para_dict(v) for v in vendas], columns=COLUNAS)
+    pedidos = listar_pedidos(conta)
+    linhas = [_linha_para_dict(oid, d) for oid, d in sorted(pedidos.items())]
+    df = pd.DataFrame(linhas, columns=COLUNAS)
 
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:

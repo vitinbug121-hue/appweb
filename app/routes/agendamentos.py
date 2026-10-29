@@ -1,53 +1,76 @@
-import json
-
+from app.routes._tarefas import disparar
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
-from app.db import get_connection
-from app.services import agendador
+from app.db import (
+    alternar_agendamento,
+    criar_agendamento,
+    listar_agendamentos,
+    listar_contas,
+    listar_historico,
+    remover_agendamento,
+)
+from app.services.acoes_agendamento import ACOES, ACOES_LABEL, executar_agendamento_por_id, exige_confirmacao
 
 bp = Blueprint("agendamentos", __name__, url_prefix="/agendamentos")
 
 
 @bp.route("/")
 def index():
-    conn = get_connection()
-    agendamentos = conn.execute(
-        """SELECT a.*, c.email AS conta_email FROM agendamentos a
-           JOIN contas c ON c.id = a.conta_id
-           ORDER BY a.id DESC"""
-    ).fetchall()
-    historico = conn.execute(
-        "SELECT * FROM historico_execucao ORDER BY id DESC LIMIT 30"
-    ).fetchall()
-    conn.close()
-
     return render_template(
         "agendamentos/index.html",
         active_page="agendamentos",
-        agendamentos=agendamentos,
-        historico=historico,
-        acoes_label=agendador.ACOES_LABEL,
+        agendamentos=listar_agendamentos(),
+        historico=listar_historico(30),
+        acoes_label=ACOES_LABEL,
     )
+
+
+def _ler_parametros(acao, form):
+    """Lê os campos da ação escolhida. Devolve (params, erro)."""
+    params = {}
+    for p in ACOES[acao]["parametros"]:
+        nome = p["nome"]
+        if p["tipo"] == "bool":
+            params[nome] = form.get(nome) == "on"
+            continue
+        bruto = (form.get(nome) or "").strip()
+        if not bruto:
+            if p["obrigatorio"]:
+                return None, f"Informe: {p['rotulo']}."
+            if p["padrao"] is not None:
+                params[nome] = p["padrao"]
+            continue
+        if p["tipo"] == "inteiro":
+            try:
+                valor = int(bruto)
+            except ValueError:
+                return None, f"{p['rotulo']} deve ser um número inteiro."
+            if valor < 0:
+                return None, f"{p['rotulo']} não pode ser negativo."
+            params[nome] = valor
+        else:
+            params[nome] = bruto
+    if "limite" in params:
+        params["limite"] = min(200, max(1, params["limite"] or 1))
+    if "limite_reembolso" in params:
+        params["limite_reembolso"] = min(100, max(1, params["limite_reembolso"] or 1))
+    return params, None
 
 
 @bp.route("/novo", methods=["GET", "POST"])
 def novo():
-    conn = get_connection()
-    contas = conn.execute("SELECT id, email FROM contas WHERE ativo = 1 ORDER BY email").fetchall()
-    conn.close()
-
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
-        conta_id = request.form.get("conta_id")
+        conta = request.form.get("conta_id", "").strip()
         tipo = request.form.get("tipo", "diaria")
         acao = request.form.get("acao")
         horarios_raw = request.form.get("horarios", "")
         data = request.form.get("data", "").strip() or None
-        ativo = 1 if request.form.get("ativo") == "on" else 0
+        ativo = request.form.get("ativo") == "on"
 
         horarios = [h.strip() for h in horarios_raw.split(",") if h.strip()]
 
-        if not nome or not conta_id or acao not in agendador.ACOES_LABEL or not horarios:
+        if not nome or not conta or acao not in ACOES or not horarios:
             flash("Preencha nome, conta, ação e ao menos um horário válido (HH:MM).", "erro")
             return redirect(url_for("agendamentos.novo"))
 
@@ -55,51 +78,44 @@ def novo():
             flash("Informe a data para um agendamento do tipo 'única'.", "erro")
             return redirect(url_for("agendamentos.novo"))
 
-        conn = get_connection()
-        conn.execute(
-            """INSERT INTO agendamentos (nome, conta_id, tipo, acao, horarios, data, ativo, intervalo_minutos)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 0)""",
-            (nome, conta_id, tipo, acao, json.dumps(horarios), data, ativo),
-        )
-        conn.commit()
-        conn.close()
+        params, erro = _ler_parametros(acao, request.form)
+        if erro:
+            flash(erro, "erro")
+            return redirect(url_for("agendamentos.novo"))
 
+        if exige_confirmacao(acao) and request.form.get("confirmo") != "on":
+            flash("Confirme que entende que esta ação envia mensagens ou reembolsos sem supervisão.", "erro")
+            return redirect(url_for("agendamentos.novo"))
+
+        criar_agendamento(nome, conta, tipo, acao, horarios, data, ativo, parametros=params)
         flash(f"Agendamento '{nome}' criado com sucesso.", "success")
         return redirect(url_for("agendamentos.index"))
 
     return render_template(
         "agendamentos/form.html",
         active_page="agendamentos",
-        contas=contas,
-        acoes_label=agendador.ACOES_LABEL,
+        contas=listar_contas(),
+        acoes_label=ACOES_LABEL,
+        acoes_spec=ACOES,
     )
 
 
-@bp.route("/<int:agendamento_id>/deletar", methods=["POST"])
+@bp.route("/<string:agendamento_id>/deletar", methods=["POST"])
 def deletar(agendamento_id):
-    conn = get_connection()
-    conn.execute("DELETE FROM agendamentos WHERE id = ?", (agendamento_id,))
-    conn.commit()
-    conn.close()
+    remover_agendamento(agendamento_id)
     flash("Agendamento excluído.", "success")
     return redirect(url_for("agendamentos.index"))
 
 
-@bp.route("/<int:agendamento_id>/toggle", methods=["POST"])
+@bp.route("/<string:agendamento_id>/toggle", methods=["POST"])
 def toggle(agendamento_id):
-    conn = get_connection()
-    ag = conn.execute("SELECT ativo FROM agendamentos WHERE id = ?", (agendamento_id,)).fetchone()
-    if ag:
-        novo_estado = 0 if ag["ativo"] else 1
-        conn.execute("UPDATE agendamentos SET ativo = ? WHERE id = ?", (novo_estado, agendamento_id))
-        conn.commit()
-    conn.close()
+    alternar_agendamento(agendamento_id)
     flash("Estado do agendamento atualizado.", "success")
     return redirect(url_for("agendamentos.index"))
 
 
-@bp.route("/<int:agendamento_id>/executar-agora", methods=["POST"])
+@bp.route("/<string:agendamento_id>/executar-agora", methods=["POST"])
 def executar_agora(agendamento_id):
-    status, mensagem = agendador.executar_agendamento(agendamento_id)
-    flash(mensagem, "success" if status == "SUCESSO" else "erro")
-    return redirect(url_for("agendamentos.index"))
+    disparar("Executar agendamento", lambda c: executar_agendamento_por_id(agendamento_id))
+    return redirect(url_for("dashboard.index", _anchor="log"))
+

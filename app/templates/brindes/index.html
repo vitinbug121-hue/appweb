@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Brindes e reclamações{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Etapa 8</div>
+  <h1>Brindes e reclamações</h1>
+</div>
+
+<div class="row g-4">
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Enviar brindes pendentes</div>
+      <p class="text-muted small mb-3">Envia a mensagem de brinde para quem já recebeu a cobrança de não autorizados
+        e ainda não recebeu o brinde. Cada pedido recebe uma única vez. As imagens saem da pasta configurada em BRINDES_DIR.
+        Conta: <strong>{{ conta_ativa }}</strong>.</p>
+      <form method="post" action="{{ url_for('brindes.enviar_pendentes') }}" class="text-end">
+        <button class="btn btn-sm btn-acp-orange">Enviar brindes</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 mb-4">
+      <div class="fw-semibold mb-1">Pedir encerramento de reclamações</div>
+      <p class="text-muted small mb-3">Para pedidos com reclamação aberta, solicitados, sem boleto enviado e sem autorização.
+        No máximo 2 mensagens, com 1 dia entre elas.</p>
+      <form method="post" action="{{ url_for('brindes.encerrar_reclamacoes') }}" class="text-end">
+        <button class="btn btn-sm btn-acp-orange">Pedir encerramento</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

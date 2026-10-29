@@ -1,6 +1,7 @@
+from app.routes._tarefas import disparar
 from flask import Blueprint, render_template, redirect, url_for, flash, session
 
-from app.db import get_connection
+from app.db import listar_vendas_reembolsaveis, obter_tokens_reembolso
 from app.services import mercadopago
 
 bp = Blueprint("reembolso", __name__, url_prefix="/reembolso")
@@ -8,21 +9,9 @@ bp = Blueprint("reembolso", __name__, url_prefix="/reembolso")
 
 @bp.route("/")
 def index():
-    conta_id = session.get("conta_ativa_id")
-    conn = get_connection()
-    vendas = []
-    if conta_id:
-        vendas = conn.execute(
-            """SELECT id, order_id, produto, valor, id_payment, data_boleto_pago
-               FROM vendas
-               WHERE conta_id = ? AND boleto_pago = 1 AND rembolsado = 0 AND id_payment IS NOT NULL
-               ORDER BY id DESC""",
-            (conta_id,),
-        ).fetchall()
-    conn.close()
-
-    tokens_cadastrados = len(mercadopago.obter_tokens_reembolso())
-
+    conta = session.get("conta_ativa")
+    vendas = listar_vendas_reembolsaveis(conta) if conta else []
+    tokens_cadastrados = len(obter_tokens_reembolso())
     return render_template(
         "reembolso/index.html",
         active_page="reembolso",
@@ -31,42 +20,20 @@ def index():
     )
 
 
-@bp.route("/<int:venda_id>/reembolsar", methods=["POST"])
-def reembolsar(venda_id):
-    conta_id = session.get("conta_ativa_id")
-    if not conta_id:
+@bp.route("/<string:order_id>/reembolsar", methods=["POST"])
+def reembolsar(order_id):
+    conta = session.get("conta_ativa")
+    if not conta:
         flash("Selecione uma conta ativa primeiro.", "erro")
-        return redirect(url_for("reembolso.index"))
+        return redirect(url_for("dashboard.index", _anchor="log"))
 
-    sucesso, detalhe = mercadopago.reembolsar_venda(conta_id, venda_id)
+    sucesso, detalhe = mercadopago.reembolsar_venda(conta, order_id)
     flash(detalhe, "success" if sucesso else "erro")
-    return redirect(url_for("reembolso.index"))
+    return redirect(url_for("dashboard.index", _anchor="log"))
 
 
 @bp.route("/reembolsar-todos", methods=["POST"])
 def reembolsar_todos():
-    conta_id = session.get("conta_ativa_id")
-    if not conta_id:
-        flash("Selecione uma conta ativa primeiro.", "erro")
-        return redirect(url_for("reembolso.index"))
+    disparar("Reembolso em lote", mercadopago.reembolsar_todos)
+    return redirect(url_for("dashboard.index", _anchor="log"))
 
-    conn = get_connection()
-    ids = [
-        row["id"]
-        for row in conn.execute(
-            """SELECT id FROM vendas
-               WHERE conta_id = ? AND boleto_pago = 1 AND rembolsado = 0 AND id_payment IS NOT NULL""",
-            (conta_id,),
-        ).fetchall()
-    ]
-    conn.close()
-
-    sucesso_count = 0
-    for venda_id in ids:
-        sucesso, _ = mercadopago.reembolsar_venda(conta_id, venda_id)
-        if sucesso:
-            sucesso_count += 1
-
-    flash(f"Reembolso em lote concluído: {sucesso_count} de {len(ids)} venda(s) reembolsada(s).",
-          "success" if sucesso_count == len(ids) else "erro")
-    return redirect(url_for("reembolso.index"))
