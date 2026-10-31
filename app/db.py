@@ -529,3 +529,25 @@ def obter_usuario(usuario):
     if not usuario:
         return None
     return colecao(COLECAO_USUARIOS).find_one({"usuario": usuario, "ativo": True}, {"_id": 0})
+
+
+def atualizar_agendamento(agendamento_id, dados):
+    """Atualiza um agendamento existente (não cria outro)."""
+    oid = _id_valido(agendamento_id)
+    if not oid:
+        return False
+    colecao(COLECAO_AGENDAMENTOS).update_one(
+        {"_id": oid},
+        {"$set": {
+            "nome": dados["nome"],
+            "conta": dados["conta"],
+            "tipo": dados["tipo"],
+            "acao": dados["acao"],
+            "horarios": dados["horarios"],
+            "data": dados["data"],
+            "ativo": bool(dados["ativo"]),
+            "parametros": dados.get("parametros") or {},
+            "editado_em": agora_texto(),
+        }},
+    )
+    return True

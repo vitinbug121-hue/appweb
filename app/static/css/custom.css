@@ -61,10 +61,10 @@ body {
 
 .navbar-acp .brand-logo {
   height: 40px;
-  width: auto;
-  border-radius: 8px;
-  background: #fff;
-  padding: 2px;
+  width: 40px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .navbar-acp .brand-mark {

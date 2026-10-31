@@ -22,7 +22,10 @@
       <label class="form-label small mb-1">Até</label>
       <input type="date" name="ate" value="{{ ate }}" class="form-control form-control-sm">
     </div>
-    <div class="col-md-2 text-end"><button class="btn btn-sm btn-acp-orange">Filtrar</button></div>
+    <div class="col-md-2 d-grid gap-1">
+      <button class="btn btn-sm btn-acp-orange">Filtrar</button>
+      <a href="{{ url_for('dashboards.boletos_pagos') }}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+    </div>
   </form>
   <div class="text-muted small mt-2">Período pela data de solicitação do pedido.</div>
 </div>

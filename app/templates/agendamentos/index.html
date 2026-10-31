@@ -43,6 +43,7 @@
           </td>
           <td class="text-end">
             <div class="d-flex gap-2 justify-content-end">
+              <a href="{{ url_for('agendamentos.editar', agendamento_id=ag.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
               <form action="{{ url_for('agendamentos.executar_agora', agendamento_id=ag.id) }}" method="post">
                 <button class="btn btn-sm btn-outline-secondary" title="Executar agora">
                   <i class="bi bi-play-fill"></i>

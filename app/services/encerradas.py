@@ -12,6 +12,8 @@ Diferença deliberada: o desktop, ao receber 404 numa página, referenciava uma
 variável inexistente e travava o laço. Aqui 404 encerra a varredura e é
 registrado no log.
 """
+import time
+
 import requests
 
 from app.db import marcar_pedido_encerrado, obter_config_conta
@@ -22,6 +24,8 @@ from app.services.logger import log_evento
 ML_ORDERS_SEARCH_URL = "https://api.mercadolibre.com/orders/search"
 PAGINA = 50
 TIMEOUT = 15
+MAX_TENTATIVAS_429 = 4
+PAUSA_ENTRE_PAGINAS = 1.0
 STATUS_ENVIO_FALHOU = {"not_delivered", "returned", "cancelled", "rejected"}
 
 
@@ -56,10 +60,23 @@ def atualizar_vendas_encerradas(conta, max_paginas=None):
     while True:
         verificar_parada()
         params = {"seller": seller_id, "limit": PAGINA, "offset": offset, "sort": "date_desc"}
-        try:
-            res = requests.get(ML_ORDERS_SEARCH_URL, headers=headers, params=params, timeout=TIMEOUT)
-        except requests.RequestException as e:
-            log_evento(conta, "erro", f"Erro ao buscar página com offset {offset}: {e}")
+        res = None
+        for tentativa in range(MAX_TENTATIVAS_429 + 1):
+            try:
+                res = requests.get(ML_ORDERS_SEARCH_URL, headers=headers, params=params, timeout=TIMEOUT)
+            except requests.RequestException as e:
+                log_evento(conta, "erro", f"Erro ao buscar página com offset {offset}: {e}")
+                res = None
+                break
+            if res.status_code != 429 or tentativa == MAX_TENTATIVAS_429:
+                break
+            espera = min(60, 5 * (2 ** tentativa))
+            log_evento(conta, "aviso",
+                       f"Mercado Livre limitou as requisições (429). Aguardando {espera}s "
+                       f"e tentando de novo (tentativa {tentativa + 1} de {MAX_TENTATIVAS_429}).")
+            time.sleep(espera)
+            verificar_parada()
+        if res is None:
             break
 
         if res.status_code == 404:
@@ -80,6 +97,7 @@ def atualizar_vendas_encerradas(conta, max_paginas=None):
         paginas += 1
         total = (dados.get("paging") or {}).get("total", 0) or 0
         offset += PAGINA
+        time.sleep(PAUSA_ENTRE_PAGINAS)
         if offset >= total or (max_paginas and paginas >= max_paginas):
             break
 
