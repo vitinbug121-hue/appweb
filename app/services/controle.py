@@ -41,3 +41,15 @@ def liberar_parada():
         {"$set": {"ativa": False, "liberada_em": datetime.now().strftime("%d/%m/%Y %H:%M:%S")}},
         upsert=True,
     )
+
+
+def registrar_sinal_worker():
+    """O worker chama isto a cada ciclo: prova que está rodando."""
+    colecao(COLECAO).update_one(
+        {"_id": "worker"}, {"$set": {"ultimo_sinal": datetime.now()}}, upsert=True
+    )
+
+
+def sinal_worker():
+    doc = colecao(COLECAO).find_one({"_id": "worker"}, {"ultimo_sinal": 1})
+    return doc.get("ultimo_sinal") if doc else None

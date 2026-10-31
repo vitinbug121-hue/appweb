@@ -181,13 +181,6 @@ def _vendas_encerradas(conta, p):
     return True, f"Analisados: {r['analisados']} | Marcados: {r['marcados']}"
 
 
-def _reclamacao(conta, p):
-    r1 = ia_conversa.responder_lote(conta, p.get("limite", 20))
-    r2 = brindes.encerrar_reclamacoes(conta)
-    ok = r1["falhas"] == 0 and r2["falhas"] == 0
-    return ok, (f"IA enviadas: {r1['enviadas']} | Encerramentos: {r2['enviadas']} | "
-                f"Falhas: {r1['falhas'] + r2['falhas']}")
-
 
 def _brindes(conta, p):
     r = brindes.enviar_brindes_pendentes(conta)
@@ -210,7 +203,6 @@ ACOES = {
     "agradecimento": {"rotulo": "Agradecimento", "parametros": [P_DATA], "envia_mensagem": True, "reembolsa": False, "executar": _agradecimento},
     "brindes": {"rotulo": "Enviar brindes pendentes", "parametros": [], "envia_mensagem": True, "reembolsa": False, "executar": _brindes},
     "ia": {"rotulo": "IA: responder chat e reclamações", "parametros": [P_LIMITE], "envia_mensagem": True, "reembolsa": False, "executar": _ia_conversas},
-    "reclamacao": {"rotulo": "Executar reclamação (IA + encerramento)", "parametros": [P_LIMITE], "envia_mensagem": True, "reembolsa": False, "executar": _reclamacao},
     "responder_duvidas_ml": {"rotulo": "Responder dúvidas ML (IA)", "parametros": [], "envia_mensagem": True, "reembolsa": False, "executar": _responder_duvidas},
     "atualizar_pagos": {"rotulo": "Atualizar pagos (Mercado Pago)", "parametros": [], "envia_mensagem": False, "reembolsa": False, "executar": _atualizar_pagos},
     "atualizar_asaas_pagos": {"rotulo": "Atualizar boletos Asaas pagos (API)", "parametros": [], "envia_mensagem": False, "reembolsa": False, "executar": _atualizar_asaas},

@@ -53,4 +53,29 @@
   </div>
 </div>
 
+
+<div class="card p-3 mt-4">
+  <div class="fw-semibold mb-1">Marcar como pagos manualmente</div>
+  <p class="text-muted small mb-3">Para cobranças via PIX, a loja confirma o pagamento pelo chat. Quando o cliente
+    pagar e a confirmação não aparecer, cole aqui os números das ordens. Só são marcadas as ordens cobradas via PIX
+    e ainda não pagas. As demais são listadas com o motivo.</p>
+  <form method="post" action="{{ url_for('pix.marcar_manual') }}" class="row g-2">
+    <div class="col-md-8">
+      <label class="form-label small mb-1">Números das ordens</label>
+      <textarea name="ordens" rows="3" class="form-control form-control-sm font-monospace"
+                placeholder="2000018958929916, 2000018944831626&#10;ou um por linha"></textarea>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Pagamento de</label>
+      <select name="tipo" class="form-select form-select-sm">
+        <option value="taxa">Taxa (cobrança via PIX)</option>
+        <option value="dobro">Dobro (cobrança via PIX)</option>
+      </select>
+      <div class="text-end mt-2">
+        <button class="btn btn-sm btn-acp-orange">Marcar como pagos</button>
+      </div>
+    </div>
+  </form>
+</div>
+
 {% endblock %}

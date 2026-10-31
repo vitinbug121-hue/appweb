@@ -18,6 +18,7 @@ bp = Blueprint("dashboard", __name__, url_prefix="/")
 def _acoes_rapidas():
     # Cards de atalho. Ações ainda não portadas apontam para Vendas.
     return [
+        {"icone": "bi-chat-text", "titulo": "Mensagem personalizada", "subtitulo": "Texto para ordens escolhidas", "acao": "mensagem", "url": url_for("mensagem.index")},
         {"icone": "bi-send", "titulo": "Primeira Mensagem", "subtitulo": "Pedir telefone", "acao": "solicitar", "url": url_for("solicitar.index")},
         {"icone": "bi-shield-check", "titulo": "Taxar e Autorizar", "subtitulo": "Pedir DIGITE 1", "acao": "autorizar", "url": url_for("autorizacao.index")},
         {"icone": "bi-arrow-repeat", "titulo": "Cobranças", "subtitulo": "Erro, reenvio e dobro", "acao": "cobrancas", "url": url_for("cobrancas.index")},
@@ -30,7 +31,6 @@ def _acoes_rapidas():
         {"icone": "bi-receipt", "titulo": "Enviar Boleto", "subtitulo": "Taxa de importação", "acao": "boleto", "url": url_for("vendas.index")},
         {"icone": "bi-truck", "titulo": "Enviar Rastreio", "subtitulo": "Código de envio", "acao": "rastreio", "url": url_for("vendas.index")},
         {"icone": "bi-chat-heart", "titulo": "Agradecimento", "subtitulo": "Pós-pagamento", "acao": "agradecimento", "url": url_for("vendas.index")},
-        {"icone": "bi-robot", "titulo": "IA Reclamação", "subtitulo": "Resposta automática", "acao": "ia_reclamacao"},
         {"icone": "bi-arrow-repeat", "titulo": "Atualizar Pagos", "subtitulo": "Conciliação MP", "acao": "atualizar_pagos"},
         {"icone": "bi-file-earmark-excel", "titulo": "Exportar Excel", "subtitulo": "Relatório completo", "acao": "exportar", "url": url_for("vendas.exportar")},
     ]

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Mensagem personalizada{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="eyebrow">Envio manual</div>
+  <h1>Mensagem personalizada</h1>
+</div>
+
+<div class="card p-3">
+  <p class="text-muted small mb-3">
+    Escreva o texto e cole os números das ordens que vão receber. Cada linha que você quebrar no texto
+    vira uma quebra de linha no chat do Mercado Livre. Conta: <strong>{{ conta_ativa }}</strong>.
+  </p>
+
+  <form method="post" action="{{ url_for('mensagem.enviar') }}" class="row g-3">
+    <div class="col-12">
+      <label class="form-label small mb-1">Texto da mensagem</label>
+      <textarea name="texto" id="textoMensagem" rows="8" class="form-control font-monospace"
+                placeholder="Olá, tudo bem?&#10;&#10;Seu pedido..." required></textarea>
+      <div class="form-text" id="contadorTexto">0 caracteres</div>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label small mb-1">Números das ordens</label>
+      <textarea name="ordens" rows="3" class="form-control font-monospace"
+                placeholder="2000018958929916, 2000018944831626&#10;ou um por linha" required></textarea>
+    </div>
+
+    <div class="col-12 form-check">
+      <input class="form-check-input" type="checkbox" name="confirmo" id="confirmo" required>
+      <label class="form-check-label small" for="confirmo">
+        Confirmo que este texto será enviado aos compradores das ordens listadas.
+      </label>
+    </div>
+
+    <div class="col-12 text-end">
+      <button type="submit" class="btn btn-acp-orange">Enviar mensagem</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function () {
+    const campo = document.getElementById('textoMensagem');
+    const contador = document.getElementById('contadorTexto');
+    function atualizar() {
+      const n = campo.value.length;
+      const linhas = campo.value.split('\n').length;
+      contador.textContent = n + ' caracteres · ' + linhas + (linhas === 1 ? ' linha' : ' linhas');
+    }
+    campo.addEventListener('input', atualizar);
+    atualizar();
+  })();
+</script>
+
+{% endblock %}

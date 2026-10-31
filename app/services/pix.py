@@ -18,6 +18,7 @@ import time
 from datetime import datetime
 
 from app.db import (
+    obter_pedido,
     agora_texto,
     atualizar_campos_pedido,
     buscar_proximo_boleto,
@@ -278,4 +279,58 @@ def aviso_pix_para_boleto(conta, lote_numero=None):
                f"Aviso PIX → boleto finalizado. Enviados: {resumo['enviados']} | "
                f"Não pediram a chave: {resumo['nao_pediram_pix']} | Sem boleto ASAAS: {resumo['sem_boleto']} | "
                f"Falhas: {resumo['falhas']}")
+    return resumo
+
+
+def _separar_ordens(texto):
+    """Aceita números separados por espaço, vírgula, ponto e vírgula ou quebra de linha."""
+    vistos, saida = set(), []
+    for item in re.split(r"[\s,;]+", texto or ""):
+        item = item.strip()
+        if item and item not in vistos:
+            vistos.add(item)
+            saida.append(item)
+    return saida
+
+
+def marcar_pagos_manual(conta, texto_ordens, tipo):
+    """Baixa manual de cobranças via PIX. tipo = 'taxa' ou 'dobro'.
+    Só marca pedidos cobrados via PIX e ainda não pagos. Devolve um resumo com os motivos."""
+    if tipo not in ("taxa", "dobro"):
+        return {"erro": "Tipo inválido."}
+    ordens = _separar_ordens(texto_ordens)
+    if not ordens:
+        return {"erro": "Informe pelo menos um número de ordem."}
+
+    resumo = {"total": len(ordens), "marcadas": [], "ignoradas": []}
+    agora = agora_texto()
+    for oid in ordens:
+        d = obter_pedido(conta, oid)
+        if d is None:
+            resumo["ignoradas"].append((oid, "não encontrada nesta conta"))
+            continue
+        if tipo == "taxa":
+            if not d.get("cobrado_via_pix"):
+                resumo["ignoradas"].append((oid, "não foi cobrada via PIX"))
+                continue
+            if d.get("pago_via_pix"):
+                resumo["ignoradas"].append((oid, "já estava paga"))
+                continue
+            campos = {"pago_via_pix": True, "data_pago_via_pix": agora, "pago_via_pix_manual": True}
+        else:
+            if str(d.get("metodo_cobro_dobro") or "").lower() != "pix":
+                resumo["ignoradas"].append((oid, "dobro não foi cobrado via PIX"))
+                continue
+            if d.get("pago_dobro_pix"):
+                resumo["ignoradas"].append((oid, "dobro já estava pago"))
+                continue
+            campos = {"pago_dobro_pix": True, "data_pago_dobro_pix": agora, "pago_dobro_pix_manual": True}
+
+        atualizar_campos_pedido(conta, oid, campos)
+        resumo["marcadas"].append(oid)
+        log_evento(conta, "sucesso",
+                   f"Ordem {oid}: {'taxa' if tipo == 'taxa' else 'dobro'} via PIX marcada como paga manualmente pelo operador.")
+
+    log_evento(conta, "sucesso",
+               f"Baixa manual de PIX: {len(resumo['marcadas'])} marcada(s), {len(resumo['ignoradas'])} ignorada(s).")
     return resumo

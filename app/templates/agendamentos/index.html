@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Agendamentos{% endblock %}
 {% block content %}
+{% if worker_status.online %}
+<div class="alert alert-success small py-2"><i class="bi bi-check-circle me-1"></i>Worker de agendamentos ligado ({{ worker_status.texto }}).</div>
+{% else %}
+<div class="alert alert-danger small py-2"><i class="bi bi-exclamation-octagon me-1"></i><strong>Worker desligado</strong> ({{ worker_status.texto }}). Os agendamentos não vão rodar até ele ser iniciado.</div>
+{% endif %}
 
 <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
   <div>
@@ -97,9 +102,6 @@
 
 <p class="text-muted small mt-3">
   <i class="bi bi-info-circle me-1"></i>
-  O agendador roda em uma thread em background dentro do próprio processo Flask, verificando a cada
-  {{ '20 segundos' }} se algum horário bate. Por enquanto só a ação "Atualizar Pagos" pode ser
-  agendada — é a única que não depende de um input manual (como um código de rastreio digitado na hora).
-</p>
+  Os agendamentos rodam pelo worker, um processo separado do site. Para eles dispararem, o worker precisa estar em execução (<code>python -m app.worker</code>). Um agendamento dispara até 5 minutos depois do horário, se o worker estava desligado.</p>
 
 {% endblock %}

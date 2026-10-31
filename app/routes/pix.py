@@ -42,3 +42,21 @@ def asaas_navegador():
     disparar("Atualizar Asaas (navegador)", asaas_selenium.atualizar_asaas_navegador)
     return redirect(url_for("dashboard.index", _anchor="log"))
 
+
+
+@bp.route("/marcar-manual", methods=["POST"])
+def marcar_manual():
+    conta = session.get("conta_ativa")
+    if not conta:
+        flash("Selecione uma conta ativa primeiro.", "erro")
+        return redirect(url_for("pix.index"))
+    r = pix.marcar_pagos_manual(conta, request.form.get("ordens", ""), request.form.get("tipo", "taxa"))
+    if "erro" in r:
+        flash(r["erro"], "erro")
+        return redirect(url_for("pix.index"))
+    partes = [f"{len(r['marcadas'])} marcada(s) como paga(s)"]
+    if r["ignoradas"]:
+        detalhes = "; ".join(f"{oid}: {motivo}" for oid, motivo in r["ignoradas"][:10])
+        partes.append(f"{len(r['ignoradas'])} ignorada(s) ({detalhes}{'...' if len(r['ignoradas']) > 10 else ''})")
+    flash("Baixa manual: " + " · ".join(partes), "success" if not r["ignoradas"] else "erro")
+    return redirect(url_for("pix.index"))

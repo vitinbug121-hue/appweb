@@ -1,4 +1,6 @@
 from app.routes._tarefas import disparar
+from datetime import datetime
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 from app.db import (
@@ -9,6 +11,7 @@ from app.db import (
     listar_historico,
     remover_agendamento,
 )
+from app.services.controle import sinal_worker
 from app.services.acoes_agendamento import ACOES, ACOES_LABEL, executar_agendamento_por_id, exige_confirmacao
 
 bp = Blueprint("agendamentos", __name__, url_prefix="/agendamentos")
@@ -16,8 +19,15 @@ bp = Blueprint("agendamentos", __name__, url_prefix="/agendamentos")
 
 @bp.route("/")
 def index():
+    ultimo = sinal_worker()
+    if ultimo is None:
+        worker_status = {"online": False, "texto": "nunca conectou"}
+    else:
+        segundos = int((datetime.now() - ultimo).total_seconds())
+        worker_status = {"online": segundos < 90, "texto": f"último sinal há {segundos} s"}
     return render_template(
         "agendamentos/index.html",
+        worker_status=worker_status,
         active_page="agendamentos",
         agendamentos=listar_agendamentos(),
         historico=listar_historico(30),

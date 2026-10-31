@@ -67,9 +67,10 @@ def create_app():
     from app.routes.brindes import bp as brindes_bp
     from app.routes.dashboards import bp as dashboards_bp
     from app.routes.auth import bp as auth_bp
+    from app.routes.mensagem import bp as mensagem_bp
 
     for bp in (dashboard_bp, contas_bp, vendas_bp, agendamentos_bp, reembolso_bp,
-               ia_bp, documentacao_bp, acoes_bp, logs_bp, configuracoes_bp, ml_auth_bp, solicitar_bp, autorizacao_bp, cobrancas_bp, pix_bp, encerradas_bp, brindes_bp, dashboards_bp, auth_bp):
+               ia_bp, documentacao_bp, acoes_bp, logs_bp, configuracoes_bp, ml_auth_bp, solicitar_bp, autorizacao_bp, cobrancas_bp, pix_bp, encerradas_bp, brindes_bp, dashboards_bp, auth_bp, mensagem_bp):
         app.register_blueprint(bp)
 
     from flask import flash, redirect, url_for

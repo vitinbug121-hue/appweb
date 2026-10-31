@@ -1,0 +1,69 @@
+# Blueprint do Render: um serviço web (site) e um worker (agendamentos).
+# Segredos têm "sync: false": são preenchidos no painel do Render, nunca neste arquivo.
+services:
+  - type: web
+    name: bossx4-web
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app --workers 2 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    healthCheckPath: /login
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: coletor_pro
+      - key: SECRET_KEY
+        generateValue: true
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: ML_REDIRECT_URI
+        value: https://engoo.com/app/daily-news
+      - key: GROQ_API_KEY1
+        sync: false
+      - key: GEMINI_API_KEY1
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash-lite
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_ENV
+        value: sandbox
+      - key: ASAAS_SITUACOES_PAGAS
+        value: recebida
+
+  - type: worker
+    name: bossx4-worker
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.worker
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: coletor_pro
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: ML_REDIRECT_URI
+        value: https://engoo.com/app/daily-news
+      - key: GROQ_API_KEY1
+        sync: false
+      - key: GEMINI_API_KEY1
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash-lite
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_ENV
+        value: sandbox
+      - key: ASAAS_SITUACOES_PAGAS
+        value: recebida
